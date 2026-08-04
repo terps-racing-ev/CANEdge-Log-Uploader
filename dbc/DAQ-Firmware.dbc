@@ -1,0 +1,288 @@
+VERSION ""
+
+NS_ :
+
+BS_:
+
+BU_: BL DBF DBL DBR FR Vector__XXX
+
+BO_ 2376073216 DBF_Status: 8 DBF
+ SG_ DBF_Status_Timestamp : 0|32@1+ (1.0,0.0) [0.0|4294967295.0] "ms" Vector__XXX
+
+BO_ 2376138752 DBF_WSPD_FL: 8 DBF
+ SG_ DBF_WSPD_FL_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_WSPD_FL_Timeout : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_WSPD_FL_Avg_Delta : 8|32@1+ (1.0,0.0) [0.0|4294967295.0] "us" Vector__XXX
+ SG_ DBF_WSPD_FL_RPM : 40|16@1- (1.0,0.0) [-6000.0|6000.0] "RPM" Vector__XXX
+ SG_ DBF_WSPD_FL_MPH : 56|8@1+ (1.0,0.0) [0.0|255.0] "MPH" Vector__XXX
+
+BO_ 2376142848 DBF_WSPD_FR: 8 DBF
+ SG_ DBF_WSPD_FR_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_WSPD_FR_Timeout : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_WSPD_FR_Avg_Delta : 8|32@1+ (1.0,0.0) [0.0|4294967295.0] "us" Vector__XXX
+ SG_ DBF_WSPD_FR_RPM : 40|16@1- (1.0,0.0) [-6000.0|6000.0] "RPM" Vector__XXX
+ SG_ DBF_WSPD_FR_MPH : 56|8@1+ (1.0,0.0) [0.0|255.0] "MPH" Vector__XXX
+
+BO_ 2376138971 DBF_WSPD_Debug: 8 DBF
+ SG_ DBF_WSPD_Debug_FL_Cycle_Ticks : 0|8@1+ (1.0,0.0) [0.0|255.0] "" Vector__XXX
+ SG_ DBF_WSPD_Debug_FR_Cycle_Ticks : 8|8@1+ (1.0,0.0) [0.0|255.0] "" Vector__XXX
+ SG_ DBF_WSPD_Debug_FL_Min_Delta : 16|16@1+ (1.0,0.0) [0.0|65535.0] "us" Vector__XXX
+ SG_ DBF_WSPD_Debug_FR_Min_Delta : 32|16@1+ (1.0,0.0) [0.0|65535.0] "us" Vector__XXX
+
+BO_ 2376204288 DBF_Shock_FL: 8 DBF
+ SG_ DBF_Shock_FL_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Shock_FL_ADC_Err : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Shock_FL_Raw_mV : 8|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBF_Shock_FL_Filt_mV : 24|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBF_Shock_FL_mm : 40|16@1+ (0.1,0.0) [0.0|500.0] "mm" Vector__XXX
+
+BO_ 2376208384 DBF_Shock_FR: 8 DBF
+ SG_ DBF_Shock_FR_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Shock_FR_ADC_Err : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Shock_FR_Raw_mV : 8|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBF_Shock_FR_Filt_mV : 24|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBF_Shock_FR_mm : 40|16@1+ (0.1,0.0) [0.0|500.0] "mm" Vector__XXX
+
+BO_ 2376269824 DBF_Steering_Angle: 8 DBF
+ SG_ DBF_Steering_Angle_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Steering_Angle_ADC_Err : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Steering_Angle_Raw_mV : 8|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBF_Steering_Angle_Filt_mV : 24|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBF_Steering_Angle_Deg : 40|16@1- (0.1,0.0) [-360.0|360.0] "deg" Vector__XXX
+
+BO_ 2376335360 DBF_Pitot: 8 DBF
+ SG_ DBF_Pitot_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Pitot_ADC_Err : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Pitot_Raw_mV : 8|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBF_Pitot_Filt_mV : 24|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBF_Pitot_MPH : 40|16@1+ (0.01,0.0) [0.0|1000.0] "MPH" Vector__XXX
+
+BO_ 2376073411 DBF_Accel_Timer_Cmd: 8 Vector__XXX
+ SG_ DBF_Accel_Timer_Command : 0|8@1+ (1.0,0.0) [0.0|2.0] "" DBF
+
+BO_ 2376073412 DBF_Lap_Timer_Cmd: 8 Vector__XXX
+ SG_ DBF_Lap_Timer_Command : 0|8@1+ (1.0,0.0) [0.0|3.0] "" DBF
+
+BO_ 2376597504 DBF_Accel_Timer: 8 DBF
+ SG_ DBF_Accel_Timer_Enabled : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Accel_Timer_Running : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Accel_Timer_Complete : 2|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Accel_Timer_FL_Complete : 3|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Accel_Timer_FR_Complete : 4|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Accel_Timer_Avg_Complete : 5|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Accel_Timer_FL_Time : 16|16@1+ (1.0,0.0) [0.0|65535.0] "ms" Vector__XXX
+ SG_ DBF_Accel_Timer_FR_Time : 32|16@1+ (1.0,0.0) [0.0|65535.0] "ms" Vector__XXX
+ SG_ DBF_Accel_Timer_Avg_Time : 48|16@1+ (1.0,0.0) [0.0|65535.0] "ms" Vector__XXX
+
+BO_ 2376601600 DBF_Accel_Timer_Distance: 8 DBF
+ SG_ DBF_Accel_Timer_Dist_Enabled : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Accel_Timer_Dist_Running : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Accel_Timer_Dist_Complete : 2|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Accel_Timer_FL_Distance : 16|16@1+ (0.01,0.0) [0.0|655.35] "ft" Vector__XXX
+ SG_ DBF_Accel_Timer_FR_Distance : 32|16@1+ (0.01,0.0) [0.0|655.35] "ft" Vector__XXX
+ SG_ DBF_Accel_Timer_Avg_Distance : 48|16@1+ (0.01,0.0) [0.0|655.35] "ft" Vector__XXX
+
+BO_ 2376663040 DBF_ODO_LR: 8 DBF
+ SG_ FR_Odo : 0|32@1+ (1.0,0.0) [0.0|4294967295.0] "" Vector__XXX
+ SG_ FL_Odo : 32|32@1+ (1.0,0.0) [0.0|4294967295.0] "" Vector__XXX
+
+BO_ 2376794112 DBF_Lap_Timer_Results: 8 DBF
+ SG_ DBF_Lap_Timer_Lap_Index M : 0|8@1+ (1.0,0.0) [0.0|39.0] "" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_Count : 8|8@1+ (1.0,0.0) [0.0|40.0] "" Vector__XXX
+ SG_ DBF_Lap_Timer_State : 16|8@1+ (1.0,0.0) [0.0|2.0] "" Vector__XXX
+ SG_ DBF_Lap_Timer_Current_Lap : 48|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_01 m0 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_02 m1 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_03 m2 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_04 m3 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_05 m4 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_06 m5 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_07 m6 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_08 m7 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_09 m8 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_10 m9 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_11 m10 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_12 m11 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_13 m12 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_14 m13 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_15 m14 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_16 m15 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_17 m16 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_18 m17 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_19 m18 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_20 m19 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_21 m20 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_22 m21 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_23 m22 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_24 m23 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_25 m24 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_26 m25 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_27 m26 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_28 m27 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_29 m28 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_30 m29 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_31 m30 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_32 m31 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_33 m32 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_34 m33 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_35 m34 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_36 m35 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_37 m36 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_38 m37 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_39 m38 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+ SG_ DBF_Lap_Timer_Lap_40 m39 : 32|16@1+ (0.01,0.0) [0.0|655.35] "s" Vector__XXX
+
+BO_ 2377121792 DBL_Status: 8 DBL
+ SG_ DBL_Status_Timestamp : 0|32@1+ (1.0,0.0) [0.0|4294967295.0] "ms" Vector__XXX
+
+BO_ 2377187328 DBL_WSPD_BL: 8 DBL
+ SG_ DBL_WSPD_BL_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_WSPD_BL_Timeout : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_WSPD_BL_Avg_Delta : 8|32@1+ (1.0,0.0) [0.0|4294967295.0] "us" Vector__XXX
+ SG_ DBL_WSPD_BL_RPM : 40|16@1- (1.0,0.0) [-6000.0|6000.0] "RPM" Vector__XXX
+ SG_ DBL_WSPD_BL_MPH : 56|8@1+ (1.0,0.0) [0.0|255.0] "MPH" Vector__XXX
+
+BO_ 2377252864 DBL_Shock_BL: 8 DBL
+ SG_ DBL_Shock_BL_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_Shock_BL_ADC_Err : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_Shock_BL_Raw_mV : 8|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBL_Shock_BL_Filt_mV : 24|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBL_Shock_BL_mm : 40|16@1+ (0.1,0.0) [0.0|500.0] "mm" Vector__XXX
+
+BO_ 2377449472 DBL_CT_Swirl: 8 DBL
+ SG_ DBL_CT_Swirl_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_CT_Swirl_ADC_Err : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_CT_Swirl_Out_of_Range : 2|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_CT_Swirl_Raw_mV : 8|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBL_CT_Swirl_Filt_mV : 24|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBL_CT_Swirl_Deg_C : 40|8@1- (1.0,0.0) [-40.0|120.0] "C" Vector__XXX
+
+BO_ 2377453568 DBL_CT_Rad1: 8 DBL
+ SG_ DBL_CT_Rad1_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_CT_Rad1_ADC_Err : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_CT_Rad1_Out_of_Range : 2|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_CT_Rad1_Raw_mV : 8|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBL_CT_Rad1_Filt_mV : 24|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBL_CT_Rad1_Deg_C : 40|8@1- (1.0,0.0) [-40.0|120.0] "C" Vector__XXX
+
+BO_ 2377457664 DBL_CT_Rad2: 8 DBL
+ SG_ DBL_CT_Rad2_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_CT_Rad2_ADC_Err : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_CT_Rad2_Out_of_Range : 2|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_CT_Rad2_Raw_mV : 8|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBL_CT_Rad2_Filt_mV : 24|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBL_CT_Rad2_Deg_C : 40|8@1- (1.0,0.0) [-40.0|120.0] "C" Vector__XXX
+
+BO_ 2377515008 DBL_Tach_L: 8 DBL
+ SG_ DBL_Tach_L_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_Tach_L_Timeout : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_Tach_L_Avg_Delta : 8|32@1+ (1.0,0.0) [0.0|4294967295.0] "us" Vector__XXX
+ SG_ DBL_Tach_L_RPM : 40|16@1- (1.0,0.0) [-6000.0|6000.0] "RPM" Vector__XXX
+
+BO_ 2378170368 DBR_Status: 8 DBR
+ SG_ DBR_Status_Timestamp : 0|32@1+ (1.0,0.0) [0.0|4294967295.0] "ms" Vector__XXX
+
+BO_ 2378235904 DBR_WSPD_BR: 8 DBR
+ SG_ DBR_WSPD_BR_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBR_WSPD_BR_Timeout : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBR_WSPD_BR_Avg_Delta : 8|32@1+ (1.0,0.0) [0.0|4294967295.0] "us" Vector__XXX
+ SG_ DBR_WSPD_BR_RPM : 40|16@1- (1.0,0.0) [-6000.0|6000.0] "RPM" Vector__XXX
+ SG_ DBR_WSPD_BR_MPH : 56|8@1+ (1.0,0.0) [0.0|255.0] "MPH" Vector__XXX
+
+BO_ 2378301440 DBR_Shock_BR: 8 DBR
+ SG_ DBR_Shock_BR_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBR_Shock_BR_ADC_Err : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBR_Shock_BR_Raw_mV : 8|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBR_Shock_BR_Filt_mV : 24|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBR_Shock_BR_mm : 40|16@1+ (0.1,0.0) [0.0|500.0] "mm" Vector__XXX
+
+BO_ 2378498048 DBR_CT_Motor: 8 DBR
+ SG_ DBL_CT_Motor_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_CT_Motor_ADC_Err : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_CT_Motor_Out_of_Range : 2|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBR_CT_Motor_Raw_mV : 8|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBR_CT_Motor_Filt_mV : 24|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBR_CT_Motor_Deg_C : 40|8@1- (1.0,0.0) [-40.0|120.0] "C" Vector__XXX
+
+BO_ 2378502144 DBR_CT_Inv: 8 DBR
+ SG_ DBL_CT_Inv_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_CT_Inv_ADC_Err : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBL_CT_Inv_Out_of_Range : 2|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBR_CT_Inv_Raw_mV : 8|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBR_CT_Inv_Filt_mV : 24|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
+ SG_ DBR_CT_Inv_Deg_C : 40|8@1- (1.0,0.0) [-40.0|120.0] "C" Vector__XXX
+
+BO_ 2378563584 DBR_Tach_R: 8 DBR
+ SG_ DBR_Tach_R_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBR_Tach_R_Timeout : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBR_Tach_R_Avg_Delta : 8|32@1+ (1.0,0.0) [0.0|4294967295.0] "us" Vector__XXX
+ SG_ DBR_Tach_R_RPM : 40|16@1- (1.0,0.0) [-6000.0|6000.0] "RPM" Vector__XXX
+
+BO_ 187 BL_BrakeTemp: 8 BL
+ SG_ BL_BrakeTemp_Ch1 : 7|16@0+ (0.1,-100.0) [-1000.0|1000.0] "C" Vector__XXX
+ SG_ BL_BrakeTemp_Ch2 : 23|16@0+ (0.1,-100.0) [-1000.0|1000.0] "C" Vector__XXX
+ SG_ BL_BrakeTemp_Ch3 : 39|16@0+ (0.1,-100.0) [-1000.0|1000.0] "C" Vector__XXX
+ SG_ BL_BrakeTemp_Ch4 : 55|16@0+ (0.1,-100.0) [-1000.0|1000.0] "C" Vector__XXX
+
+BO_ 251 FR_BrakeTemp: 8 FR
+ SG_ FR_BrakeTemp_Ch1 : 7|16@0+ (0.1,-100.0) [-1000.0|1000.0] "C" Vector__XXX
+ SG_ FR_BrakeTemp_Ch2 : 23|16@0+ (0.1,-100.0) [-1000.0|1000.0] "C" Vector__XXX
+ SG_ FR_BrakeTemp_Ch3 : 39|16@0+ (0.1,-100.0) [-1000.0|1000.0] "C" Vector__XXX
+ SG_ FR_BrakeTemp_Ch4 : 55|16@0+ (0.1,-100.0) [-1000.0|1000.0] "C" Vector__XXX
+
+VAL_ 2376138752 DBF_WSPD_FL_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376138752 DBF_WSPD_FL_Timeout 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376142848 DBF_WSPD_FR_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376142848 DBF_WSPD_FR_Timeout 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376204288 DBF_Shock_FL_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376204288 DBF_Shock_FL_ADC_Err 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376208384 DBF_Shock_FR_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376208384 DBF_Shock_FR_ADC_Err 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376269824 DBF_Steering_Angle_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376269824 DBF_Steering_Angle_ADC_Err 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376335360 DBF_Pitot_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376335360 DBF_Pitot_ADC_Err 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376073411 DBF_Accel_Timer_Command 0 "Disable" 1 "Enable" 2 "Reset" ;
+VAL_ 2376597504 DBF_Accel_Timer_Enabled 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376597504 DBF_Accel_Timer_Running 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376597504 DBF_Accel_Timer_Complete 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376597504 DBF_Accel_Timer_FL_Complete 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376597504 DBF_Accel_Timer_FR_Complete 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376597504 DBF_Accel_Timer_Avg_Complete 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376601600 DBF_Accel_Timer_Dist_Enabled 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376601600 DBF_Accel_Timer_Dist_Running 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376601600 DBF_Accel_Timer_Dist_Complete 0 "FALSE" 1 "TRUE" ;
+VAL_ 2376073412 DBF_Lap_Timer_Command 0 "Reset" 1 "Start" 2 "Lap" 3 "Pause" ;
+VAL_ 2376794112 DBF_Lap_Timer_State 0 "Idle" 1 "Running" 2 "Paused" ;
+VAL_ 2377187328 DBL_WSPD_BL_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2377187328 DBL_WSPD_BL_Timeout 0 "FALSE" 1 "TRUE" ;
+VAL_ 2377252864 DBL_Shock_BL_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2377252864 DBL_Shock_BL_ADC_Err 0 "FALSE" 1 "TRUE" ;
+VAL_ 2377449472 DBL_CT_Swirl_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2377449472 DBL_CT_Swirl_ADC_Err 0 "FALSE" 1 "TRUE" ;
+VAL_ 2377449472 DBL_CT_Swirl_Out_of_Range 0 "FALSE" 1 "TRUE" ;
+VAL_ 2377453568 DBL_CT_Rad1_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2377453568 DBL_CT_Rad1_ADC_Err 0 "FALSE" 1 "TRUE" ;
+VAL_ 2377453568 DBL_CT_Rad1_Out_of_Range 0 "FALSE" 1 "TRUE" ;
+VAL_ 2377457664 DBL_CT_Rad2_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2377457664 DBL_CT_Rad2_ADC_Err 0 "FALSE" 1 "TRUE" ;
+VAL_ 2377457664 DBL_CT_Rad2_Out_of_Range 0 "FALSE" 1 "TRUE" ;
+VAL_ 2377515008 DBL_Tach_L_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2377515008 DBL_Tach_L_Timeout 0 "FALSE" 1 "TRUE" ;
+VAL_ 2378235904 DBR_WSPD_BR_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2378235904 DBR_WSPD_BR_Timeout 0 "FALSE" 1 "TRUE" ;
+VAL_ 2378301440 DBR_Shock_BR_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2378301440 DBR_Shock_BR_ADC_Err 0 "FALSE" 1 "TRUE" ;
+VAL_ 2378498048 DBL_CT_Motor_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2378498048 DBL_CT_Motor_ADC_Err 0 "FALSE" 1 "TRUE" ;
+VAL_ 2378498048 DBL_CT_Motor_Out_of_Range 0 "FALSE" 1 "TRUE" ;
+VAL_ 2378502144 DBL_CT_Inv_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2378502144 DBL_CT_Inv_ADC_Err 0 "FALSE" 1 "TRUE" ;
+VAL_ 2378502144 DBL_CT_Inv_Out_of_Range 0 "FALSE" 1 "TRUE" ;
+VAL_ 2378563584 DBR_Tach_R_Valid 0 "FALSE" 1 "TRUE" ;
+VAL_ 2378563584 DBR_Tach_R_Timeout 0 "FALSE" 1 "TRUE" ;
+CM_ BO_ 2376073411 "Front-board acceleration timer command. Send this extended frame to 0x0DA000C3 for DBF: command 0 disables the timer, 1 clears prior results and arms the timer, and 2 clears results while preserving the current enabled state.";
+CM_ BO_ 2376597504 "Front-board acceleration timer result/status. After enable, the first FL or FR wheel-speed pulse starts timing. The timer uses a 17.66 in front tire diameter, 16 wheel-speed pulses per revolution, and a 246 ft target. Completion bits indicate valid FL-only, FR-only, and averaged-wheel elapsed times in milliseconds.";
+CM_ BO_ 2376601600 "Front-board acceleration timer live distance. Distances use the 17.66 in front tire diameter and 16 wheel-speed pulses per revolution. FL, FR, and averaged front-wheel distances are reported in feet while the timer is armed/running and hold their final values after completion.";
+CM_ BO_ 2376073412 "Front-board manual lap timer command. Send this extended frame to 0x0DA000C4 for DBF: command 0 resets the timer to idle and clears all laps, 1 starts the timer from idle or resumes from pause, 2 records the current lap split and begins the next lap, and 3 pauses the timer. The timer is controlled entirely over CAN and uses no sensors.";
+CM_ BO_ 2376794112 "Front-board manual lap timer results, multiplexed by DBF_Lap_Timer_Lap_Index (0-39 selects lap number index+1). DBF_Lap_Timer_Lap_Count (completed laps), DBF_Lap_Timer_State, and DBF_Lap_Timer_Current_Lap (live in-progress lap time) are present in every frame. Recorded and live lap times use 10 ms resolution and saturate at 655.35 s. Up to 40 laps are supported.";

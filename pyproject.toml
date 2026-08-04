@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "canedge-sharepoint-uploader"
+version = "0.1.0"
+description = "Decode CANedge MF4 logs and upload deterministic artifacts to SharePoint"
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "asammdf>=8.8,<9",
+    "msal>=1.31,<2",
+    "python-dotenv>=1,<2",
+    "requests>=2.32,<3",
+    "tkinterdnd2>=0.4,<1; platform_system == 'Windows'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<9"]
+
+[project.scripts]
+canedge-uploader = "canedge_uploader.cli:main"
+canedge-uploader-gui = "canedge_uploader.gui:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

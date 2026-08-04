@@ -1,0 +1,276 @@
+VERSION ""
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_SGTYPE_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: CAN_Host EV_Inverter
+
+BA_DEF_ BO_  "VFrameFormat" ENUM  "StandardCAN","ExtendedCAN";
+BA_DEF_ BO_  "GenMsgCycleTime" INT 0 10000;
+BA_DEF_DEF_  "VFrameFormat" "StandardCAN";
+BA_DEF_DEF_  "GenMsgCycleTime" 0;
+
+BO_ 160 Temperatures_1: 8 EV_Inverter
+ SG_ INV_Module_A_Temp : 0|16@1- (0.1,0) [-3276.8|3276.7] "degC" CAN_Host
+ SG_ INV_Module_B_Temp : 16|16@1- (0.1,0) [-3276.8|3276.7] "degC" CAN_Host
+ SG_ INV_Module_C_Temp : 32|16@1- (0.1,0) [-3276.8|3276.7] "degC" CAN_Host
+ SG_ INV_GDB_Temp : 48|16@1- (0.1,0) [-3276.8|3276.7] "degC" CAN_Host
+
+BO_ 161 Temperatures_2: 8 EV_Inverter
+ SG_ INV_Control_Board_Temp : 0|16@1- (0.1,0) [-3276.8|3276.7] "degC" CAN_Host
+ SG_ INV_RTD1_Temperature : 16|16@1- (0.1,0) [-3276.8|3276.7] "degC" CAN_Host
+ SG_ INV_RTD2_Temperature : 32|16@1- (0.1,0) [-3276.8|3276.7] "degC" CAN_Host
+ SG_ INV_Hot_Spot_Temp_Motor : 48|16@1- (0.1,0) [-3276.8|3276.7] "degC" CAN_Host
+
+BO_ 162 Temperatures_3: 8 EV_Inverter
+ SG_ INV_Coolant_Temp : 0|16@1- (0.1,0) [-3276.8|3276.7] "degC" CAN_Host
+ SG_ INV_Hot_Spot_Temp_Inverter : 16|16@1- (0.1,0) [-3276.8|3276.7] "degC" CAN_Host
+ SG_ INV_Motor_Temp : 32|16@1- (0.1,0) [-3276.8|3276.7] "degC" CAN_Host
+ SG_ INV_Torque_Shudder : 48|16@1- (0.1,0) [-3276.8|3276.7] "Nm" CAN_Host
+
+BO_ 163 Analog_Input_Voltages: 8 EV_Inverter
+ SG_ INV_Analog_Input_1 : 0|10@1- (0.01,0) [-5.12|5.11] "V" CAN_Host
+ SG_ INV_Analog_Input_2 : 10|10@1- (0.01,0) [-5.12|5.11] "V" CAN_Host
+ SG_ INV_Analog_Input_3 : 20|10@1- (0.01,0) [-5.12|5.11] "V" CAN_Host
+ SG_ INV_Analog_Input_4 : 32|10@1- (0.01,0) [-5.12|5.11] "V" CAN_Host
+ SG_ INV_Analog_Input_5 : 42|10@1- (0.01,0) [-5.12|5.11] "V" CAN_Host
+ SG_ INV_Analog_Input_6 : 52|10@1- (0.01,0) [-5.12|5.11] "V" CAN_Host
+
+BO_ 164 Digital_Input_Status: 8 EV_Inverter
+ SG_ INV_Digital_Input_1_Fwd : 0|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Digital_Input_2_Rev : 1|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Digital_Input_3_Brake : 2|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Digital_Input_4_Regen : 3|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Digital_Input_5_Ignit : 4|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Digital_Input_6_Start : 5|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Digital_Input_7_Valet : 6|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Digital_Input_8 : 7|1@1+ (1,0) [0|1] "" CAN_Host
+
+BO_ 165 Motor_Position_Info: 8 EV_Inverter
+ SG_ INV_Motor_Angle_Electrical : 0|16@1- (0.1,0) [-3276.8|3276.7] "deg" CAN_Host
+ SG_ INV_Motor_Speed : 16|16@1- (1,0) [-32768|32767] "RPM" CAN_Host
+ SG_ INV_Electrical_Out_Freq : 32|16@1- (0.1,0) [-3276.8|3276.7] "Hz" CAN_Host
+ SG_ INV_Delta_Resolver_Filt : 48|16@1- (0.1,0) [-3276.8|3276.7] "deg" CAN_Host
+
+BO_ 166 Current_Info: 8 EV_Inverter
+ SG_ INV_Phase_A_Current : 0|16@1- (0.1,0) [-3276.8|3276.7] "A" CAN_Host
+ SG_ INV_Phase_B_Current : 16|16@1- (0.1,0) [-3276.8|3276.7] "A" CAN_Host
+ SG_ INV_Phase_C_Current : 32|16@1- (0.1,0) [-3276.8|3276.7] "A" CAN_Host
+ SG_ INV_DC_Bus_Current : 48|16@1- (0.1,0) [-3276.8|3276.7] "A" CAN_Host
+
+BO_ 167 Voltage_Info: 8 EV_Inverter
+ SG_ INV_DC_Bus_Voltage : 0|16@1- (0.1,0) [-3276.8|3276.7] "V" CAN_Host
+ SG_ INV_Output_Voltage : 16|16@1- (0.1,0) [-3276.8|3276.7] "V" CAN_Host
+ SG_ INV_VAB_Vd_Voltage : 32|16@1- (0.1,0) [-3276.8|3276.7] "V" CAN_Host
+ SG_ INV_VBC_Vq_Voltage : 48|16@1- (0.1,0) [-3276.8|3276.7] "V" CAN_Host
+
+BO_ 168 Flux_Info: 8 EV_Inverter
+ SG_ INV_Vd_ff : 0|16@1- (0.001,0) [-32.768|32.767] "Wb" CAN_Host
+ SG_ INV_Vq_ff : 16|16@1- (0.001,0) [-32.768|32.767] "Wb" CAN_Host
+ SG_ INV_Id : 32|16@1- (0.1,0) [-3276.8|3276.7] "A" CAN_Host
+ SG_ INV_Iq : 48|16@1- (0.1,0) [-3276.8|3276.7] "A" CAN_Host
+
+BO_ 169 Internal_Voltages: 8 EV_Inverter
+ SG_ INV_Ref_Voltage_1_5 : 0|16@1- (0.01,0) [-327.68|327.67] "V" CAN_Host
+ SG_ INV_Ref_Voltage_2_5 : 16|16@1- (0.01,0) [-327.68|327.67] "V" CAN_Host
+ SG_ INV_Ref_Voltage_5_0 : 32|16@1- (0.01,0) [-327.68|327.67] "V" CAN_Host
+ SG_ INV_Ref_Voltage_12_0 : 48|16@1- (0.01,0) [-327.68|327.67] "V" CAN_Host
+
+BO_ 170 Internal_States: 8 EV_Inverter
+ SG_ INV_VSM_State : 0|8@1+ (1,0) [0|255] "" CAN_Host
+ SG_ INV_PWM_Frequency : 8|8@1+ (1,0) [0|255] "kHz" CAN_Host
+ SG_ INV_Inverter_State : 16|8@1+ (1,0) [0|255] "" CAN_Host
+ SG_ INV_Relay_1_Status : 24|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Relay_2_Status : 25|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Relay_3_Status : 26|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Relay_4_Status : 27|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Relay_5_Status : 28|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Relay_6_Status : 29|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Inverter_Run_Mode : 32|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Self_Sensing_Assist : 33|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_ASC_State : 34|3@1+ (1,0) [0|7] "" CAN_Host
+ SG_ INV_Discharge_State : 37|3@1+ (1,0) [0|7] "" CAN_Host
+ SG_ INV_Command_Mode : 40|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Rolling_Counter : 44|4@1+ (1,0) [0|15] "" CAN_Host
+ SG_ INV_Enable_State : 48|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Burst_Model_Mode : 49|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_BMS_Limit_Regen : 50|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Limit_Motor_Temp : 52|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Limit_Hot_Spot_Mtr : 53|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Key_Switch_Start : 54|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Enable_Lockout : 55|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Direction_Command : 56|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_BMS_Active : 57|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_BMS_Limit_Mot_Trq : 58|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Limit_Max_Speed : 59|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Limit_Hot_Spot_Inv : 60|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Low_Speed_Limit : 61|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Limit_Coolant_Derat : 62|1@1+ (1,0) [0|1] "" CAN_Host
+ SG_ INV_Limit_Stall_Burst : 63|1@1+ (1,0) [0|1] "" CAN_Host
+
+BO_ 171 Fault_Codes: 8 EV_Inverter
+ SG_ INV_Post_Fault_Lo : 0|16@1+ (1,0) [0|65535] "" CAN_Host
+ SG_ INV_Post_Fault_Hi : 16|16@1+ (1,0) [0|65535] "" CAN_Host
+ SG_ INV_Run_Fault_Lo : 32|16@1+ (1,0) [0|65535] "" CAN_Host
+ SG_ INV_Run_Fault_Hi : 48|16@1+ (1,0) [0|65535] "" CAN_Host
+
+BO_ 172 Torque_Timer_Info: 8 EV_Inverter
+ SG_ INV_Commanded_Torque : 0|16@1- (0.1,0) [-3276.8|3276.7] "Nm" CAN_Host
+ SG_ INV_Torque_Feedback : 16|16@1- (0.1,0) [-3276.8|3276.7] "Nm" CAN_Host
+ SG_ INV_Power_On_Timer : 32|32@1+ (0.003,0) [0|12884901.885] "s" CAN_Host
+
+BO_ 173 Mod_Index_Flux_Weakening: 8 EV_Inverter
+ SG_ INV_Modulation_Index : 0|16@1- (0.01,0) [-327.68|327.67] "" CAN_Host
+ SG_ INV_Flux_Weakening_Out : 16|16@1- (0.1,0) [-3276.8|3276.7] "A" CAN_Host
+ SG_ INV_Id_Command : 32|16@1- (0.1,0) [-3276.8|3276.7] "A" CAN_Host
+ SG_ INV_Iq_Command : 48|16@1- (0.1,0) [-3276.8|3276.7] "A" CAN_Host
+
+BO_ 174 Firmware_Info: 8 EV_Inverter
+ SG_ EEPROM_Version : 0|16@1+ (1,0) [0|65535] "" CAN_Host
+ SG_ Software_Version : 16|16@1+ (1,0) [0|65535] "" CAN_Host
+ SG_ Date_Code_MMDD : 32|16@1+ (1,0) [0|65535] "" CAN_Host
+ SG_ Date_Code_YYYY : 48|16@1+ (1,0) [0|65535] "" CAN_Host
+
+BO_ 176 High_Speed_Message: 8 EV_Inverter
+ SG_ HS_Torque_Command : 0|16@1- (0.1,0) [-3276.8|3276.7] "Nm" CAN_Host
+ SG_ HS_Torque_Feedback : 16|16@1- (0.1,0) [-3276.8|3276.7] "Nm" CAN_Host
+ SG_ HS_Motor_Speed : 32|16@1- (1,0) [-32768|32767] "RPM" CAN_Host
+ SG_ HS_DC_Bus_Voltage : 48|16@1- (0.1,0) [-3276.8|3276.7] "V" CAN_Host
+
+BO_ 177 Torque_Capability: 8 EV_Inverter
+ SG_ INV_Motor_Trq_Avail : 0|16@1- (0.1,0) [-3276.8|3276.7] "Nm" CAN_Host
+ SG_ INV_Regen_Trq_Avail : 16|16@1- (0.1,0) [-3276.8|3276.7] "Nm" CAN_Host
+
+BO_ 192 Command_Message: 8 CAN_Host
+ SG_ CMD_Torque_Command : 0|16@1- (0.1,0) [-3276.8|3276.7] "Nm" EV_Inverter
+ SG_ CMD_Speed_Command : 16|16@1- (1,0) [-32768|32767] "RPM" EV_Inverter
+ SG_ CMD_Direction_Command : 32|8@1+ (1,0) [0|255] "" EV_Inverter
+ SG_ CMD_Inverter_Enable : 40|1@1+ (1,0) [0|1] "" EV_Inverter
+ SG_ CMD_Inverter_Discharge : 41|1@1+ (1,0) [0|1] "" EV_Inverter
+ SG_ CMD_Speed_Mode_Enable : 42|1@1+ (1,0) [0|1] "" EV_Inverter
+ SG_ CMD_Rolling_Counter : 44|4@1+ (1,0) [0|15] "" EV_Inverter
+ SG_ CMD_Torque_Limit : 48|16@1- (0.1,0) [-3276.8|3276.7] "Nm" EV_Inverter
+
+BO_ 193 Parameter_Read_Write_Command: 8 CAN_Host
+ SG_ PRM_Address : 0|16@1+ (1,0) [0|65535] "" EV_Inverter
+ SG_ PRM_RW_Command : 16|8@1+ (1,0) [0|255] "" EV_Inverter
+ SG_ PRM_Data : 32|16@1- (1,0) [-32768|32767] "" EV_Inverter
+
+BO_ 194 Parameter_Response: 8 EV_Inverter
+ SG_ RSP_Address : 0|16@1+ (1,0) [0|65535] "" CAN_Host
+ SG_ RSP_Write_Success : 16|8@1+ (1,0) [0|255] "" CAN_Host
+ SG_ RSP_Data : 32|16@1- (1,0) [-32768|32767] "" CAN_Host
+
+// Standard CAN ID markers
+BA_ "VFrameFormat" BO_ 160 0;
+BA_ "VFrameFormat" BO_ 161 0;
+BA_ "VFrameFormat" BO_ 162 0;
+BA_ "VFrameFormat" BO_ 163 0;
+BA_ "VFrameFormat" BO_ 164 0;
+BA_ "VFrameFormat" BO_ 165 0;
+BA_ "VFrameFormat" BO_ 166 0;
+BA_ "VFrameFormat" BO_ 167 0;
+BA_ "VFrameFormat" BO_ 168 0;
+BA_ "VFrameFormat" BO_ 169 0;
+BA_ "VFrameFormat" BO_ 170 0;
+BA_ "VFrameFormat" BO_ 171 0;
+BA_ "VFrameFormat" BO_ 172 0;
+BA_ "VFrameFormat" BO_ 173 0;
+BA_ "VFrameFormat" BO_ 174 0;
+BA_ "VFrameFormat" BO_ 176 0;
+BA_ "VFrameFormat" BO_ 177 0;
+BA_ "VFrameFormat" BO_ 192 0;
+BA_ "VFrameFormat" BO_ 193 0;
+BA_ "VFrameFormat" BO_ 194 0;
+
+// Message cycle times (ms)
+BA_ "GenMsgCycleTime" BO_ 160 100;
+BA_ "GenMsgCycleTime" BO_ 161 100;
+BA_ "GenMsgCycleTime" BO_ 162 100;
+BA_ "GenMsgCycleTime" BO_ 163 10;
+BA_ "GenMsgCycleTime" BO_ 164 10;
+BA_ "GenMsgCycleTime" BO_ 165 10;
+BA_ "GenMsgCycleTime" BO_ 166 10;
+BA_ "GenMsgCycleTime" BO_ 167 10;
+BA_ "GenMsgCycleTime" BO_ 168 10;
+BA_ "GenMsgCycleTime" BO_ 169 100;
+BA_ "GenMsgCycleTime" BO_ 170 10;
+BA_ "GenMsgCycleTime" BO_ 171 10;
+BA_ "GenMsgCycleTime" BO_ 172 10;
+BA_ "GenMsgCycleTime" BO_ 173 10;
+BA_ "GenMsgCycleTime" BO_ 174 100;
+BA_ "GenMsgCycleTime" BO_ 176 3;
+BA_ "GenMsgCycleTime" BO_ 177 10;
+BA_ "GenMsgCycleTime" BO_ 192 10;
+
+// Enumerations
+VAL_ 164 INV_Digital_Input_1_Fwd 0 "Off" 1 "On";
+VAL_ 164 INV_Digital_Input_2_Rev 0 "Off" 1 "On";
+VAL_ 164 INV_Digital_Input_3_Brake 0 "Off" 1 "On";
+VAL_ 164 INV_Digital_Input_4_Regen 0 "Off" 1 "On";
+VAL_ 164 INV_Digital_Input_5_Ignit 0 "Off" 1 "On";
+VAL_ 164 INV_Digital_Input_6_Start 0 "Off" 1 "On";
+VAL_ 164 INV_Digital_Input_7_Valet 0 "Off" 1 "On";
+VAL_ 164 INV_Digital_Input_8 0 "Off" 1 "On";
+
+VAL_ 170 INV_VSM_State 0 "Start" 1 "PreChg_Init" 2 "PreChg_Act" 3 "PreChg_Done" 4 "Wait" 5 "Ready" 6 "Running" 7 "Fault" 14 "Shutdown" 15 "Recycle_Pwr";
+VAL_ 170 INV_Inverter_State 0 "Pwr_On" 1 "Stop" 2 "Open_Loop" 3 "Closed_Loop" 4 "Wait" 8 "Idle_Run" 9 "Idle_Stop";
+VAL_ 170 INV_Relay_1_Status 0 "Off" 1 "Active";
+VAL_ 170 INV_Relay_2_Status 0 "Off" 1 "Active";
+VAL_ 170 INV_Relay_3_Status 0 "Off" 1 "Active";
+VAL_ 170 INV_Relay_4_Status 0 "Off" 1 "Active";
+VAL_ 170 INV_Relay_5_Status 0 "Off" 1 "Active";
+VAL_ 170 INV_Relay_6_Status 0 "Off" 1 "Active";
+VAL_ 170 INV_Inverter_Run_Mode 0 "Torque_Mode" 1 "Speed_Mode";
+VAL_ 170 INV_Self_Sensing_Assist 0 "Disabled" 1 "Enabled";
+VAL_ 170 INV_ASC_State 0 "Dis" 1 "En" 2 "Pend" 3 "Dly" 4 "Act" 5 "Comp" 6 "Blk" 7 "Supp";
+VAL_ 170 INV_Discharge_State 0 "Dis" 1 "En_Wait" 2 "SpdChk" 3 "Act" 4 "Comp";
+VAL_ 170 INV_Command_Mode 0 "CAN_Mode" 1 "VSM_Mode";
+VAL_ 170 INV_Enable_State 0 "Disabled" 1 "Enabled";
+VAL_ 170 INV_Burst_Model_Mode 0 "Stall" 1 "High_Speed";
+VAL_ 170 INV_BMS_Limit_Regen 0 "Not_Limited" 1 "Limited";
+VAL_ 170 INV_Limit_Motor_Temp 0 "Not_Limited" 1 "Limited";
+VAL_ 170 INV_Limit_Hot_Spot_Mtr 0 "Not_Limited" 1 "Limited";
+VAL_ 170 INV_Key_Switch_Start 0 "Not_Active" 1 "Active";
+VAL_ 170 INV_Enable_Lockout 0 "Can_Enable" 1 "Locked_Out";
+VAL_ 170 INV_Direction_Command 0 "Reverse" 1 "Forward";
+VAL_ 170 INV_BMS_Active 0 "Not_Rx" 1 "Receiving";
+VAL_ 170 INV_BMS_Limit_Mot_Trq 0 "Not_Limited" 1 "Limited";
+VAL_ 170 INV_Limit_Max_Speed 0 "Not_Limited" 1 "Limited";
+VAL_ 170 INV_Limit_Hot_Spot_Inv 0 "Not_Limited" 1 "Limited";
+VAL_ 170 INV_Low_Speed_Limit 0 "Not_Limited" 1 "Limited";
+VAL_ 170 INV_Limit_Coolant_Derat 0 "Not_Limited" 1 "Limited";
+VAL_ 170 INV_Limit_Stall_Burst 0 "Not_Limited" 1 "Limited";
+
+VAL_ 192 CMD_Direction_Command 0 "Reverse" 1 "Forward";
+VAL_ 192 CMD_Inverter_Enable 0 "Off" 1 "On";
+VAL_ 192 CMD_Inverter_Discharge 0 "Disable" 1 "Enable";
+VAL_ 192 CMD_Speed_Mode_Enable 0 "No_Override" 1 "Force_Speed_Mode";
+VAL_ 193 PRM_RW_Command 0 "Read" 1 "Write";
+VAL_ 194 RSP_Write_Success 0 "Failed_or_Read" 1 "Success";

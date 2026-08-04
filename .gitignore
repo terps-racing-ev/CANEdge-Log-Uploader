@@ -1,0 +1,14 @@
+.venv/
+.test-venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+decoded_output/
+decoded_output*/
+CANEDGE_OUTPUT/
+logs/
+.canedge-uploader/
+*.token_cache
