@@ -148,7 +148,7 @@ class Processor:
                 )
 
             decoded = raw.extract_bus_logging(
-                database_files={"CAN": [(str(path), 0) for path in dbcs]},
+                database_files={"CAN": [(str(path), self.settings.decode_can_bus) for path in dbcs]},
                 version="4.10",
                 progress=decode_progress,
             )

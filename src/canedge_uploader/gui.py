@@ -5,6 +5,7 @@ import re
 import threading
 import webbrowser
 import logging
+from dataclasses import replace
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 import tkinter as tk
@@ -51,17 +52,20 @@ def _overall_percent(event: ProgressEvent) -> float:
 class UploaderWindow:
     def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title("CANedge SharePoint Uploader")
-        self.root.geometry("760x560")
-        self.root.minsize(640, 480)
+        self.root.title("CANedge Log Uploader")
+        self.root.geometry("780x640")
+        self.root.minsize(680, 560)
         self.events: queue.Queue[tuple[str, object]] = queue.Queue()
         self.cancel_event = threading.Event()
         self.worker: threading.Thread | None = None
-        self.root_url = ""
+        self.open_target = ""
         self._progress_buckets: dict[str, int] = {}
         self.log_file = configure_logging()
         self.settings_preview = load_settings()
         self.folder = tk.StringVar()
+        self.destination_mode = tk.StringVar(value="sharepoint")
+        self.sharepoint_path = tk.StringVar(value=self.settings_preview.output_parent_sp_path)
+        self.local_output = tk.StringVar(value=str(Path("decoded_output")))
         self.status = tk.StringVar(value="Drop the CANedge output folder below, or click Browse.")
         self.file_count = tk.StringVar(value="0 / 0 files")
         self.progress_value = tk.DoubleVar(value=0)
@@ -72,7 +76,7 @@ class UploaderWindow:
         outer = ttk.Frame(self.root, padding=20)
         outer.pack(fill="both", expand=True)
         ttk.Label(outer, text="CANedge Log Uploader", font=("Segoe UI", 18, "bold")).pack(anchor="w")
-        ttk.Label(outer, text="Decode bundled DBC signals and upload only new logs to SharePoint.").pack(anchor="w", pady=(2, 18))
+        ttk.Label(outer, text="Decode bundled DBC signals, then upload to SharePoint or save locally.").pack(anchor="w", pady=(2, 18))
 
         drop = ttk.LabelFrame(outer, text="CANedge output folder", padding=14)
         drop.pack(fill="x")
@@ -92,10 +96,40 @@ class UploaderWindow:
         except (ImportError, tk.TclError):
             pass
 
-        destination = self.settings_preview.output_parent_sp_path or "NOT CONFIGURED"
-        ttk.Label(outer, text=f"SharePoint destination: {destination}", foreground="#555", wraplength=700).pack(
-            anchor="w", pady=(10, 0)
-        )
+        destination = ttk.LabelFrame(outer, text="Destination", padding=14)
+        destination.pack(fill="x", pady=(12, 0))
+
+        mode_row = ttk.Frame(destination)
+        mode_row.pack(fill="x")
+        ttk.Radiobutton(
+            mode_row,
+            text="SharePoint",
+            value="sharepoint",
+            variable=self.destination_mode,
+            command=self._sync_destination_controls,
+        ).pack(side="left")
+        ttk.Radiobutton(
+            mode_row,
+            text="Local folder",
+            value="local",
+            variable=self.destination_mode,
+            command=self._sync_destination_controls,
+        ).pack(side="left", padx=(18, 0))
+
+        self.sharepoint_row = ttk.Frame(destination)
+        self.sharepoint_row.pack(fill="x", pady=(10, 0))
+        ttk.Label(self.sharepoint_row, text="SharePoint path", width=16).pack(side="left")
+        self.sharepoint_entry = ttk.Entry(self.sharepoint_row, textvariable=self.sharepoint_path)
+        self.sharepoint_entry.pack(side="left", fill="x", expand=True)
+
+        self.local_row = ttk.Frame(destination)
+        self.local_row.pack(fill="x", pady=(10, 0))
+        ttk.Label(self.local_row, text="Local output", width=16).pack(side="left")
+        self.local_entry = ttk.Entry(self.local_row, textvariable=self.local_output)
+        self.local_entry.pack(side="left", fill="x", expand=True)
+        self.local_browse_button = ttk.Button(self.local_row, text="Browse…", command=self._browse_local_output)
+        self.local_browse_button.pack(side="left", padx=(8, 0))
+        self._sync_destination_controls()
 
         progress_header = ttk.Frame(outer)
         progress_header.pack(fill="x", pady=(18, 6))
@@ -106,11 +140,11 @@ class UploaderWindow:
 
         buttons = ttk.Frame(outer)
         buttons.pack(fill="x", pady=12)
-        self.upload_button = ttk.Button(buttons, text="Upload", command=self._start)
+        self.upload_button = ttk.Button(buttons, text="Start", command=self._start)
         self.upload_button.pack(side="left")
         self.cancel_button = ttk.Button(buttons, text="Cancel", command=self.cancel_event.set, state="disabled")
         self.cancel_button.pack(side="left", padx=8)
-        self.open_button = ttk.Button(buttons, text="Open SharePoint Folder", command=self._open_root, state="disabled")
+        self.open_button = ttk.Button(buttons, text="Open Destination", command=self._open_destination, state="disabled")
         self.open_button.pack(side="right")
 
         log_frame = ttk.LabelFrame(outer, text="Activity", padding=8)
@@ -126,6 +160,18 @@ class UploaderWindow:
         selected = filedialog.askdirectory(title="Select CANedge output folder")
         if selected:
             self.folder.set(selected)
+
+    def _browse_local_output(self):
+        selected = filedialog.askdirectory(title="Select local output folder")
+        if selected:
+            self.local_output.set(selected)
+
+    def _sync_destination_controls(self):
+        sharepoint_state = "normal" if self.destination_mode.get() == "sharepoint" else "disabled"
+        local_state = "normal" if self.destination_mode.get() == "local" else "disabled"
+        self.sharepoint_entry.configure(state=sharepoint_state)
+        self.local_entry.configure(state=local_state)
+        self.local_browse_button.configure(state=local_state)
 
     def _drop(self, event):
         paths = self.root.tk.splitlist(event.data)
@@ -143,40 +189,61 @@ class UploaderWindow:
         if not source.is_dir():
             messagebox.showerror("Folder required", "Select a valid CANedge output folder first.")
             return
+        mode = self.destination_mode.get()
+        sharepoint_path = self.sharepoint_path.get().strip()
+        local_output = Path(self.local_output.get()).expanduser()
+        if mode == "sharepoint" and not sharepoint_path:
+            messagebox.showerror("SharePoint path required", "Enter a SharePoint destination path.")
+            return
+        if mode == "local" and not self.local_output.get().strip():
+            messagebox.showerror("Local output required", "Select a local output folder.")
+            return
         self.cancel_event.clear()
         self.upload_button.configure(state="disabled")
         self.cancel_button.configure(state="normal")
         self.open_button.configure(state="disabled")
+        self.open_target = ""
         self.progress_value.set(0)
         self.file_count.set("0 / 0 files")
         self._progress_buckets.clear()
         self.status.set("Checking application setup…")
         self._append(f"Starting: {source}")
-        self.worker = threading.Thread(target=self._run, args=(source,), daemon=True)
+        self.worker = threading.Thread(
+            target=self._run,
+            args=(source, mode, sharepoint_path, local_output),
+            daemon=True,
+        )
         self.worker.start()
 
-    def _run(self, source: Path):
+    def _run(self, source: Path, mode: str, sharepoint_path: str, local_output: Path):
         try:
             self.events.put(("status", "Loading configuration…"))
             log.info("GUI worker started for %s", source)
             settings = load_settings()
-            if not settings.configured_for_sharepoint or not settings.output_parent_sp_path:
-                raise RuntimeError("SharePoint settings are incomplete in env/.env")
-            self.events.put(("status", "Connecting to Microsoft…"))
-            log.info("Creating Microsoft Graph client")
-            client = GraphClient(
-                settings,
-                auth_message=lambda message: self.events.put(("auth", message)),
-                cancelled=self.cancel_event.is_set,
-            )
-            destination = SharePointDestination(client, settings)
+            destination = None
+            output_dir = None
+            if mode == "sharepoint":
+                settings = replace(settings, output_parent_sp_path=sharepoint_path)
+                if not settings.configured_for_sharepoint or not settings.output_parent_sp_path:
+                    raise RuntimeError("SharePoint settings are incomplete in env/.env")
+                self.events.put(("status", "Connecting to Microsoft…"))
+                log.info("Creating Microsoft Graph client")
+                client = GraphClient(
+                    settings,
+                    auth_message=lambda message: self.events.put(("auth", message)),
+                    cancelled=self.cancel_event.is_set,
+                )
+                destination = SharePointDestination(client, settings)
+            else:
+                output_dir = local_output
             processor = Processor(
                 settings,
                 destination=destination,
                 progress=lambda event: self.events.put(("progress", event)),
                 cancel=self.cancel_event,
             )
-            summary = processor.run(source)
+            summary = processor.run(source, output_dir=output_dir)
+            self.events.put(("local_output", str(output_dir.resolve()) if output_dir else ""))
             self.events.put(("done", summary))
         except Exception as exc:
             self.events.put(("error", exc))
@@ -220,15 +287,23 @@ class UploaderWindow:
                     self._append(f"[setup] {payload}")
                 elif kind == "done":
                     summary = payload
-                    self.root_url = summary.root_url
-                    self.status.set(f"Complete: {summary.uploaded} uploaded, {summary.skipped} already present, {summary.failed} failed.")
+                    if summary.root_url:
+                        self.open_target = summary.root_url
+                        self.status.set(
+                            f"Complete: {summary.uploaded} uploaded, {summary.skipped} already present, {summary.failed} failed."
+                        )
+                    else:
+                        self.status.set(f"Complete: {summary.saved} saved locally, {summary.failed} failed.")
                     self.progress_value.set(100)
                     self.file_count.set(f"{summary.discovered} / {summary.discovered} complete")
                     self._set_idle()
-                    if self.root_url:
+                    if self.open_target:
                         self.open_button.configure(state="normal")
                     if summary.failed:
                         messagebox.showwarning("Completed with errors", f"Some files failed. See the activity panel and debug log:\n{self.log_file}")
+                elif kind == "local_output":
+                    if payload:
+                        self.open_target = Path(str(payload)).as_uri()
                 elif kind == "error":
                     self.status.set(f"Error: {payload}")
                     self._append(f"[error] {payload}")
@@ -242,9 +317,9 @@ class UploaderWindow:
         self.upload_button.configure(state="normal")
         self.cancel_button.configure(state="disabled")
 
-    def _open_root(self):
-        if self.root_url:
-            webbrowser.open(self.root_url)
+    def _open_destination(self):
+        if self.open_target:
+            webbrowser.open(self.open_target)
 
 
 def main():

@@ -3,4 +3,4 @@ TENANT_ID = "ee2d6d72-9535-4242-a077-acf185782f9b"
 
 SITE_HOSTNAME=umd0.sharepoint.com
 SITE_PATH=/TeamsTerpsRacingEV
-OUTPUT_PARENT_SP_PATH=/_Overall-EV26/Testing Logs
+OUTPUT_PARENT_SP_PATH=/_Overall-EV27/Testing Logs

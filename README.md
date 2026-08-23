@@ -26,14 +26,18 @@ python run_gui.py
 Then:
 
 1. Drop or browse to the `CANEDGE_OUTPUT` folder.
-2. Click **Upload**.
-3. On the first run, the app opens Microsoft device sign-in and copies the displayed code to the clipboard. Later runs reuse the local token cache. Login can be cancelled without closing the app.
-4. Watch the per-file decode/upload progress.
-5. Click **Open SharePoint Folder** when processing completes.
+2. Choose **SharePoint** or **Local folder** as the destination.
+3. Edit the SharePoint path or local output folder if needed.
+4. Click **Start**.
+5. On the first SharePoint run, the app opens Microsoft device sign-in and copies the displayed code to the clipboard. Later runs reuse the local token cache. Login can be cancelled without closing the app.
+6. Watch the per-file decode/upload progress.
+7. Click **Open Destination** when processing completes.
 
 The app reads `env` first (the file already used by this project), then `.env`. DBCs default to the repository's `dbc/` folder, so users do not select them.
 
 On Windows, Microsoft Graph connections default to IPv4 because partially configured IPv6 networks can otherwise stall before login. Set `CANEDGE_FORCE_IPV4=0` only for an IPv6-only network.
+
+Decoded output defaults to CAN bus 1 only so mirrored messages recorded on multiple buses are not duplicated. Set `DECODE_CAN_BUS=0` to decode all buses, or set another bus number such as `2` to keep that bus instead.
 
 ## CLI
 
