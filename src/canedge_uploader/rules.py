@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 def requires_decoded_data() -> bool:
     """Return True when ``build_segments`` reads decoded signals."""
-    return False
+    return True
 
 
 def build_segments(decoded: "MDF | None", context: RecordingContext) -> list[Segment]:
@@ -25,7 +25,12 @@ def build_segments(decoded: "MDF | None", context: RecordingContext) -> list[Seg
     The default keeps the complete recording and adds no designator. Designators
     are normalized for filenames and may be combined, e.g. ("STATIC", "CHARGING").
     """
-    return [Segment()]
+    if decoded is None:
+        raise ValueError("Decoded data is required to apply VCU_Speed_MPH rules")
+
+    _timestamps, speed_samples = signal_samples(decoded, "VCU_Speed_MPH")
+    suffixes = () if any(float(speed) > 1.0 for speed in speed_samples) else ("STATIC",)
+    return [Segment(suffixes=suffixes)]
 
 
 def signal_samples(decoded: "MDF", signal_name: str) -> tuple[Any, Any]:

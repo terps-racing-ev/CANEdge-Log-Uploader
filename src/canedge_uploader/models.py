@@ -14,6 +14,7 @@ class RecordingContext:
     dbc_digest: str
     start_time: datetime
     device_id: str
+    duration_seconds: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,7 @@ class Segment:
     start: float | None = None
     stop: float | None = None
     designators: tuple[str, ...] = ()
+    suffixes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

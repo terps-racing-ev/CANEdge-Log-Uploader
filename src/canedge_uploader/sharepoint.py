@@ -176,28 +176,51 @@ class SharePointDestination:
                 return None
             raise
 
-    def ensure_date_folder(self, calendar_date: str) -> dict[str, Any]:
-        if calendar_date in self._folder_cache:
-            return self._folder_cache[calendar_date]
+    def ensure_date_folder(self, calendar_date: str, subfolder: str | None = None) -> dict[str, Any]:
+        cache_key = f"{calendar_date}/{subfolder}" if subfolder else calendar_date
+        if cache_key in self._folder_cache:
+            return self._folder_cache[cache_key]
         full_path = f"{self.settings.output_parent_sp_path.rstrip('/')}/{calendar_date}"
         existing = self._try_item_by_path(full_path)
         if existing:
             self._folder_cache[calendar_date] = existing
-            return existing
-        url = f"{GRAPH_BASE}/drives/{self.drive_id}/items/{self.root_item['id']}/children"
-        payload = {"name": calendar_date, "folder": {}, "@microsoft.graph.conflictBehavior": "fail"}
+            folder = existing
+        else:
+            url = f"{GRAPH_BASE}/drives/{self.drive_id}/items/{self.root_item['id']}/children"
+            payload = {"name": calendar_date, "folder": {}, "@microsoft.graph.conflictBehavior": "fail"}
+            response = self.client.request("POST", url, json=payload)
+            if response.status_code == 409:
+                folder = self._item_by_path(full_path)
+            elif response.ok:
+                folder = response.json()
+            else:
+                raise GraphError(f"Create date folder failed: {response.status_code}: {response.text}", response.status_code)
+            self._folder_cache[calendar_date] = folder
+
+        if not subfolder:
+            return folder
+
+        child_path = f"{full_path.rstrip('/')}/{subfolder}"
+        existing_child = self._try_item_by_path(child_path)
+        if existing_child:
+            self._folder_cache[cache_key] = existing_child
+            return existing_child
+        url = f"{GRAPH_BASE}/drives/{self.drive_id}/items/{folder['id']}/children"
+        payload = {"name": subfolder, "folder": {}, "@microsoft.graph.conflictBehavior": "fail"}
         response = self.client.request("POST", url, json=payload)
         if response.status_code == 409:
-            folder = self._item_by_path(full_path)
+            child = self._item_by_path(child_path)
         elif response.ok:
-            folder = response.json()
+            child = response.json()
         else:
-            raise GraphError(f"Create date folder failed: {response.status_code}: {response.text}", response.status_code)
-        self._folder_cache[calendar_date] = folder
-        return folder
+            raise GraphError(f"Create {subfolder} folder failed: {response.status_code}: {response.text}", response.status_code)
+        self._folder_cache[cache_key] = child
+        return child
 
-    def names_in_date(self, calendar_date: str) -> set[str]:
+    def names_in_date(self, calendar_date: str, subfolder: str | None = None) -> set[str]:
         full_path = f"{self.settings.output_parent_sp_path.rstrip('/')}/{calendar_date}"
+        if subfolder:
+            full_path = f"{full_path.rstrip('/')}/{subfolder}"
         folder = self._try_item_by_path(full_path)
         if folder is None:
             return set()
@@ -215,10 +238,13 @@ class SharePointDestination:
         calendar_date: str,
         progress: Callable[[int, int], None] | None = None,
         overwrite: bool = False,
+        subfolder: str | None = None,
+        upload_name: str | None = None,
     ) -> dict:
-        folder = self.ensure_date_folder(calendar_date)
+        folder = self.ensure_date_folder(calendar_date, subfolder)
         size = path.stat().st_size
-        escaped = quote(path.name, safe="")
+        name = upload_name or path.name
+        escaped = quote(name, safe="")
         if size <= SIMPLE_UPLOAD_LIMIT:
             url = f"{GRAPH_BASE}/drives/{self.drive_id}/items/{folder['id']}:/{escaped}:/content"
             # Bytes can be replayed safely if Graph returns a transient error.
@@ -231,7 +257,7 @@ class SharePointDestination:
             if progress:
                 progress(size, size)
             return result
-        return self._upload_session(path, folder["id"], progress, overwrite)
+        return self._upload_session(path, folder["id"], progress, overwrite, name)
 
     def _upload_session(
         self,
@@ -239,11 +265,12 @@ class SharePointDestination:
         folder_id: str,
         progress: Callable[[int, int], None] | None,
         overwrite: bool,
+        upload_name: str,
     ) -> dict:
-        escaped = quote(path.name, safe="")
+        escaped = quote(upload_name, safe="")
         url = f"{GRAPH_BASE}/drives/{self.drive_id}/items/{folder_id}:/{escaped}:/createUploadSession"
         behavior = "replace" if overwrite else "fail"
-        body = {"item": {"@microsoft.graph.conflictBehavior": behavior, "name": path.name}}
+        body = {"item": {"@microsoft.graph.conflictBehavior": behavior, "name": upload_name}}
         session = self.client.json("POST", url, json=body)
         upload_url = session["uploadUrl"]
         total = path.stat().st_size

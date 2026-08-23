@@ -9,8 +9,8 @@ from typing import Any
 
 from .config import Settings
 from .files import discover_dbcs, discover_mf4_files, eastern_time, infer_device_id
-from .models import ProgressCallback, ProgressEvent, RecordingContext, RunSummary
-from .naming import make_artifact_plans
+from .models import ArtifactPlan, ProgressCallback, ProgressEvent, RecordingContext, RunSummary
+from .naming import make_artifact_plans, make_raw_artifact_plan
 from . import rules
 
 log = logging.getLogger(__name__)
@@ -114,6 +114,7 @@ class Processor:
         decoded = None
         try:
             local_start = eastern_time(raw.header.start_time, self.settings.timezone)
+            duration_seconds = self._recording_duration(raw)
             context = RecordingContext(
                 source_path=source,
                 source_root=source_root,
@@ -121,14 +122,25 @@ class Processor:
                 dbc_digest="",
                 start_time=local_start,
                 device_id=infer_device_id(source, source_root),
+                duration_seconds=duration_seconds,
             )
+            raw_plan = make_raw_artifact_plan(context)
 
             plans = None
             if not rules.requires_decoded_data():
                 plans = make_artifact_plans(context, rules.build_segments(None, context))
                 if self.destination and not force and self._all_remote(plans):
                     summary.skipped += len(plans)
-                    self._emit("skip", f"Already uploaded: {', '.join(plan.filename for plan in plans)}", file=source)
+                    if self._raw_remote(raw_plan):
+                        summary.skipped += 1
+                        self._emit(
+                            "skip",
+                            f"Already uploaded: {', '.join(plan.filename for plan in plans)}, Raw/{raw_plan.filename}",
+                            file=source,
+                        )
+                    else:
+                        self._emit("skip", f"Already uploaded: {', '.join(plan.filename for plan in plans)}", file=source)
+                        self._upload_raw(source, raw_plan, summary, force)
                     return
 
             self._emit("decode", f"Decoding {source.name}", file=source)
@@ -203,6 +215,13 @@ class Processor:
                 else:
                     summary.saved += 1
                     self._emit("saved", f"Saved {output}", file=source)
+
+            if self.destination:
+                if raw_plan.filename in self._raw_remote_names(raw_plan.calendar_date) and not force:
+                    summary.skipped += 1
+                    self._emit("skip", f"Already uploaded: Raw/{raw_plan.filename}", file=source)
+                else:
+                    self._upload_raw(source, raw_plan, summary, force)
         finally:
             if decoded is not None:
                 decoded.close()
@@ -218,3 +237,64 @@ class Processor:
         if calendar_date not in self._remote_name_cache:
             self._remote_name_cache[calendar_date] = self.destination.names_in_date(calendar_date)
         return self._remote_name_cache[calendar_date]
+
+    def _recording_duration(self, mdf) -> float:
+        last_timestamp = getattr(mdf, "last_timestamp", None)
+        if last_timestamp is not None:
+            try:
+                return max(0.0, float(last_timestamp))
+            except (TypeError, ValueError):
+                pass
+
+        duration = 0.0
+        for group_index, _group in enumerate(getattr(mdf, "groups", [])):
+            try:
+                master = mdf.get_master(group_index)
+            except Exception:
+                log.debug("Unable to read master timestamps for MDF group %s", group_index, exc_info=True)
+                continue
+            if len(master):
+                duration = max(duration, float(master[-1]))
+        return duration
+
+    def _raw_remote(self, raw_plan) -> bool:
+        return raw_plan.filename in self._raw_remote_names(raw_plan.calendar_date)
+
+    def _raw_remote_names(self, calendar_date: str) -> set[str]:
+        cache_key = f"{calendar_date}/Raw"
+        if cache_key not in self._remote_name_cache:
+            self._remote_name_cache[cache_key] = self.destination.names_in_date(
+                calendar_date,
+                subfolder="Raw",
+            )
+        return self._remote_name_cache[cache_key]
+
+    def _upload_raw(self, source: Path, raw_plan: ArtifactPlan, summary: RunSummary, force: bool) -> None:
+        self._check_cancel()
+        self._emit("upload", f"Uploading Raw/{raw_plan.filename}", file=source)
+
+        def upload_progress(current, total):
+            self._check_cancel()
+            self.progress(
+                ProgressEvent(
+                    "upload",
+                    f"Uploading Raw/{raw_plan.filename}",
+                    current,
+                    total,
+                    source,
+                    file_index=self._active_file_index,
+                    file_total=self._file_total,
+                )
+            )
+
+        result = self.destination.upload_file(
+            source,
+            raw_plan.calendar_date,
+            upload_progress,
+            overwrite=force,
+            subfolder="Raw",
+            upload_name=raw_plan.filename,
+        )
+        summary.uploaded += 1
+        summary.uploaded_urls.append(str(result.get("webUrl", "")))
+        self._remote_name_cache.setdefault(f"{raw_plan.calendar_date}/Raw", set()).add(raw_plan.filename)
