@@ -18,5 +18,5 @@ class GuiHelperTests(unittest.TestCase):
         completed_second = ProgressEvent(
             "file_complete", "Finished", 2, 4, Path("two.mf4"), file_index=2, file_total=4
         )
-        self.assertAlmostEqual(_overall_percent(halfway_second), 35.375)
+        self.assertAlmostEqual(_overall_percent(halfway_second), 37.25)
         self.assertEqual(_overall_percent(completed_second), 50.0)

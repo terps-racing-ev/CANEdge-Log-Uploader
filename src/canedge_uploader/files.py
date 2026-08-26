@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -10,6 +11,49 @@ def discover_mf4_files(folder: Path) -> list[Path]:
     if not folder.is_dir():
         raise NotADirectoryError(f"CANedge output folder does not exist: {folder}")
     return sorted(path for path in folder.rglob("*") if path.is_file() and path.suffix.lower() == ".mf4")
+
+
+def mf4_inputs(paths: list[Path]) -> list[Path]:
+    files: list[Path] = []
+    for path in paths:
+        resolved = path.expanduser().resolve()
+        if resolved.is_file():
+            if resolved.suffix.lower() != ".mf4":
+                raise ValueError(f"Not an MF4 file: {resolved}")
+            files.append(resolved)
+        elif resolved.is_dir():
+            files.extend(discover_mf4_files(resolved))
+        else:
+            raise FileNotFoundError(f"Input does not exist: {resolved}")
+    return sorted(dict.fromkeys(files))
+
+
+def removable_roots() -> list[Path]:
+    if os.name != "nt":
+        return []
+    import ctypes
+
+    bitmask = ctypes.windll.kernel32.GetLogicalDrives()
+    roots: list[Path] = []
+    for index in range(26):
+        if not bitmask & (1 << index):
+            continue
+        root = f"{chr(65 + index)}:\\"
+        if ctypes.windll.kernel32.GetDriveTypeW(root) == 2:
+            roots.append(Path(root))
+    return roots
+
+
+def detect_removable_source() -> Path | None:
+    candidates = [root for root in removable_roots() if root.exists()]
+    with_logs = [root for root in candidates if (root / "LOG").exists() or (root / "LOGS").exists()]
+    for root in with_logs + candidates:
+        try:
+            if discover_mf4_files(root):
+                return root
+        except OSError:
+            continue
+    return candidates[0] if candidates else None
 
 
 def discover_dbcs(folder: Path) -> list[Path]:

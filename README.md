@@ -1,16 +1,17 @@
 # CANedge SharePoint Uploader
 
-This local Windows app finds every raw CANedge `.MF4` below a selected folder, decodes CAN signals with the DBC files bundled in `dbc/`, converts the recording header from UTC to DST-aware US Eastern time, gives each result a deterministic name, and uploads it to:
+This Windows app is built around the normal track-day flow: put the logger SD card in the laptop, preview the raw logs, then upload raw and decoded MF4 files to SharePoint.
 
 ```text
-[OUTPUT_PARENT_SP_PATH]/YYYY-MM-DD/[deterministic filename].mf4
+[OUTPUT_PARENT_SP_PATH]/YYYY-MM-DD/[decoded filename].mf4
+[OUTPUT_PARENT_SP_PATH]/YYYY-MM-DD/Raw/[raw filename].mf4
 ```
 
-Existing filenames are checked before decoding whenever the active rules do not require signals. Re-running against the CANedge's complete history therefore skips work already in SharePoint.
+Raw files are the cloud source of truth. Re-decode mode works from those uploaded raw files, clears decoded MF4s for the selected date folder, and writes fresh decoded outputs so a date does not mix stale and current decodes.
 
 ## Install and use the GUI
 
-Python 3.12 is recommended. Python 3.10–3.13 are supported. Python 3.14 is intentionally rejected because asammdf's required `zstd` dependency does not currently publish a Windows 3.14 wheel and otherwise requires Visual C++ build tools.
+Python 3.12 is recommended. Python 3.10-3.13 are supported. Python 3.14 is intentionally rejected because asammdf's required `zstd` dependency does not currently publish a Windows 3.14 wheel and otherwise requires Visual C++ build tools.
 
 For the simplest Windows setup, double-click `setup.bat` once, then double-click `start_gui.bat` whenever you want to upload logs.
 
@@ -23,60 +24,61 @@ python -m pip install -e .
 python run_gui.py
 ```
 
-Then:
+The app reads `env` first, then `.env`. DBCs default to the repository's `dbc/` folder.
 
-1. Drop or browse to the `CANEDGE_OUTPUT` folder.
-2. Choose **SharePoint** or **Local folder** as the destination.
-3. Edit the SharePoint path or local output folder if needed.
-4. Click **Start**.
-5. On the first SharePoint run, the app opens Microsoft device sign-in and copies the displayed code to the clipboard. Later runs reuse the local token cache. Login can be cancelled without closing the app.
-6. Watch the per-file decode/upload progress.
-7. Click **Open Destination** when processing completes.
+## Modes
 
-The app reads `env` first (the file already used by this project), then `.env`. DBCs default to the repository's `dbc/` folder, so users do not select them.
+**Upload from SD**
 
-On Windows, Microsoft Graph connections default to IPv4 because partially configured IPv6 networks can otherwise stall before login. Set `CANEDGE_FORCE_IPV4=0` only for an IPv6-only network.
+This is the primary path. The app auto-detects a removable drive when it can. If it cannot, click **Choose SD Card...** and select the SD card root. You do not need to open `LOGS`, `CANEDGE_OUTPUT`, or any logger subfolder.
 
-Decoded output defaults to CAN bus 1 only so mirrored messages recorded on multiple buses are not duplicated. Set `DECODE_CAN_BUS=0` to decode all buses, or set another bus number such as `2` to keep that bus instead.
+Click **Preview Upload** first. The preview shows the raw MF4 files found on the card and whether each raw file already exists in SharePoint. After review, click **Upload**. Decoded outputs are generated from the same raw logs during processing.
+
+**Re-decode existing**
+
+Use this when DBCs or decode rules changed after raw logs were already uploaded. Click **Load Days**, check one or more date folders, then click **Re-decode**. The app downloads each selected date's `Raw` MF4 files, deletes decoded MF4s directly inside that date folder, decodes again, and uploads the replacements.
+
+**Local decode**
+
+This is the dev path. Choose one or more MF4 files, or a folder containing MF4 files, choose an output folder, then click **Decode Locally**. Nothing is uploaded.
 
 ## CLI
 
-Upload only new files:
+Preview an SD card or folder before uploading:
 
 ```powershell
-canedge-uploader upload CANEDGE_OUTPUT
+canedge-uploader upload E:\ --preview
 ```
 
-Decode locally without touching SharePoint:
+Upload from an SD card or folder:
 
 ```powershell
-canedge-uploader process CANEDGE_OUTPUT --output decoded_output
+canedge-uploader upload E:\
 ```
 
-Force regeneration/upload (normally unnecessary):
+Re-decode uploaded raw logs for one or more days:
 
 ```powershell
-canedge-uploader upload CANEDGE_OUTPUT --force
+canedge-uploader redecode-cloud 2026-08-03 2026-08-04
 ```
+
+Decode local MF4 files or folders without SharePoint:
+
+```powershell
+canedge-uploader process CANEDGE_OUTPUT\LOGS\00000489\00000001.MF4 --output decoded_output
+canedge-uploader process CANEDGE_OUTPUT\LOGS\00000489 --output decoded_output
+```
+
+Decoded output defaults to CAN bus 1 only so mirrored messages recorded on multiple buses are not duplicated. Set `DECODE_CAN_BUS=0` to decode all buses, or set another bus number such as `2` to keep that bus instead.
 
 The rotating debug log lives at `%LOCALAPPDATA%\CANedgeUploader\logs\canedge-uploader.log`. A Microsoft token cache is stored beside it and is excluded from the repository.
 
-## Deterministic output and duplicate behavior
-
-Names contain optional rule designators followed by the Eastern recording start. For example:
-
-```text
-STATIC_CHARGING_2026-08-03_19-42-10.mf4
-```
-
-CANedge recording timestamps are treated as unique, making repeated runs idempotent without hashes or internal logger IDs in the visible name. A split result adds `part-01`, `part-02`, and so on before the timestamp. SharePoint is checked by exact deterministic name, never by the ambiguous source name `00000001.MF4`.
-
 ## Developer extension point
 
-All project-specific signal naming/splitting logic is isolated in [`src/canedge_uploader/rules.py`](src/canedge_uploader/rules.py). The upload, GUI, date-folder, hashing, and decoding code should not need edits. See [`docs/ADDING_RULES.md`](docs/ADDING_RULES.md) for tested patterns.
+All project-specific signal naming/splitting logic is isolated in [`src/canedge_uploader/rules.py`](src/canedge_uploader/rules.py). See [`docs/ADDING_RULES.md`](docs/ADDING_RULES.md) for tested patterns.
 
 ## SharePoint behavior
 
-Authentication uses the same MSAL device-code and `Sites.Selected` approach as the team's ECE Order Automation project. Files up to 4 MiB use Graph's simple upload; larger decoded MF4s use resumable 10 MiB chunks. Graph throttling and transient server failures are retried with backoff.
+Authentication uses the same MSAL device-code and `Sites.Selected` approach as the team's ECE Order Automation project. Files up to 4 MiB use Graph's simple upload; larger MF4s use resumable chunks. Graph throttling and transient server failures are retried with backoff.
 
-The configured SharePoint root folder must already exist. Calendar-day subfolders are created automatically using the recording's Eastern date.
+The configured SharePoint root folder must already exist. Calendar-day subfolders and their `Raw` subfolders are created automatically using the recording's Eastern date.

@@ -224,13 +224,86 @@ class SharePointDestination:
         folder = self._try_item_by_path(full_path)
         if folder is None:
             return set()
-        names: set[str] = set()
-        url = f"{GRAPH_BASE}/drives/{self.drive_id}/items/{folder['id']}/children?$select=name&$top=999"
+        return {str(item["name"]) for item in self._children(folder["id"], select="name")}
+
+    def list_date_folders(self) -> list[str]:
+        items = self._children(self.root_item["id"], select="name,folder")
+        names = [str(item["name"]) for item in items if "folder" in item and self._looks_like_date_folder(str(item["name"]))]
+        return sorted(names, reverse=True)
+
+    def raw_items_in_date(self, calendar_date: str) -> list[dict[str, Any]]:
+        return [
+            item
+            for item in self._items_in_date(calendar_date, subfolder="Raw")
+            if str(item.get("name", "")).lower().endswith(".mf4")
+        ]
+
+    def delete_decoded_files(self, calendar_date: str) -> int:
+        deleted = 0
+        for item in self._items_in_date(calendar_date):
+            if "file" not in item or not str(item.get("name", "")).lower().endswith(".mf4"):
+                continue
+            response = self.client.request("DELETE", f"{GRAPH_BASE}/drives/{self.drive_id}/items/{item['id']}")
+            if not response.ok:
+                raise GraphError(f"Delete decoded file failed: {response.status_code}: {response.text}", response.status_code)
+            deleted += 1
+        return deleted
+
+    def download_item(
+        self,
+        item_id: str,
+        destination: Path,
+        progress: Callable[[int, int], None] | None = None,
+    ) -> None:
+        response = self.client.request(
+            "GET",
+            f"{GRAPH_BASE}/drives/{self.drive_id}/items/{item_id}/content",
+            timeout=120,
+            stream=True,
+        )
+        if not response.ok:
+            raise GraphError(f"Download raw file failed: {response.status_code}: {response.text}", response.status_code)
+        total = int(response.headers.get("Content-Length", "0") or 0)
+        sent = 0
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        with destination.open("wb") as stream:
+            for chunk in response.iter_content(chunk_size=self.chunk_size):
+                if not chunk:
+                    continue
+                stream.write(chunk)
+                sent += len(chunk)
+                if progress:
+                    progress(sent, total)
+        if progress:
+            progress(sent, total or sent)
+
+    def _items_in_date(self, calendar_date: str, subfolder: str | None = None) -> list[dict[str, Any]]:
+        full_path = f"{self.settings.output_parent_sp_path.rstrip('/')}/{calendar_date}"
+        if subfolder:
+            full_path = f"{full_path.rstrip('/')}/{subfolder}"
+        folder = self._try_item_by_path(full_path)
+        if folder is None:
+            return []
+        return self._children(folder["id"], select="id,name,file,folder,size")
+
+    def _children(self, folder_id: str, select: str) -> list[dict[str, Any]]:
+        items: list[dict[str, Any]] = []
+        url = f"{GRAPH_BASE}/drives/{self.drive_id}/items/{folder_id}/children?$select={select}&$top=999"
         while url:
             result = self.client.json("GET", url)
-            names.update(str(item["name"]) for item in result.get("value", []))
+            items.extend(result.get("value", []))
             url = result.get("@odata.nextLink", "")
-        return names
+        return items
+
+    def _looks_like_date_folder(self, name: str) -> bool:
+        parts = name.split("-")
+        return (
+            len(parts) == 3
+            and len(parts[0]) == 4
+            and len(parts[1]) == 2
+            and len(parts[2]) == 2
+            and all(part.isdigit() for part in parts)
+        )
 
     def upload_file(
         self,

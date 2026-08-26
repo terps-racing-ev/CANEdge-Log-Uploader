@@ -35,6 +35,31 @@ class ArtifactPlan:
     start_time: datetime
 
 
+@dataclass(frozen=True)
+class UploadPreviewItem:
+    source_path: Path
+    calendar_date: str
+    raw_filename: str
+    raw_exists: bool = False
+
+
+@dataclass(frozen=True)
+class UploadPreview:
+    source_root: Path
+    items: list[UploadPreviewItem]
+    decoded_filenames_known: bool
+
+    @property
+    def upload_count(self) -> int:
+        return sum(1 for item in self.items if not item.raw_exists)
+
+
+@dataclass(frozen=True)
+class CloudDay:
+    name: str
+    raw_count: int = 0
+
+
 @dataclass
 class RunSummary:
     discovered: int = 0

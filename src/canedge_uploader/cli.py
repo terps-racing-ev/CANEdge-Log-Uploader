@@ -17,13 +17,17 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--env-file", type=Path, help="Configuration file (defaults to ./env or ./.env)")
     sub = parser.add_subparsers(dest="command")
 
-    upload = sub.add_parser("upload", help="Decode new logs and upload them to SharePoint")
-    upload.add_argument("source", type=Path, help="CANedge output folder")
+    upload = sub.add_parser("upload", help="Upload raw SD logs to SharePoint and decode them")
+    upload.add_argument("source", type=Path, help="SD card root or folder containing CANedge MF4 logs")
     upload.add_argument("--dbc-dir", type=Path, help="Override the bundled DBC folder")
-    upload.add_argument("--force", action="store_true", help="Process even if deterministic filenames already exist")
+    upload.add_argument("--preview", action="store_true", help="Show the raw files that would be uploaded, then exit")
+
+    redecode = sub.add_parser("redecode-cloud", help="Re-decode raw logs already uploaded to SharePoint")
+    redecode.add_argument("days", nargs="+", help="Cloud date folder names to re-decode, such as 2026-08-03")
+    redecode.add_argument("--dbc-dir", type=Path, help="Override the bundled DBC folder")
 
     process = sub.add_parser("process", help="Decode to a local folder without SharePoint")
-    process.add_argument("source", type=Path, help="CANedge output folder")
+    process.add_argument("inputs", nargs="+", type=Path, help="One or more MF4 files or folders")
     process.add_argument("--output", type=Path, default=Path("decoded_output"), help="Local output directory")
     process.add_argument("--dbc-dir", type=Path, help="Override the bundled DBC folder")
 
@@ -61,18 +65,27 @@ def main(argv: list[str] | None = None) -> int:
     log_file = configure_logging(args.verbose)
     settings = load_settings(args.env_file, args.dbc_dir)
     destination = None
-    if args.command == "upload":
+    if args.command in ("upload", "redecode-cloud"):
         if not settings.configured_for_sharepoint or not settings.output_parent_sp_path:
             parser.error("SharePoint configuration is incomplete in env/.env")
         client = GraphClient(settings, auth_message=lambda message: print(f"\n{message}\n", flush=True))
         destination = SharePointDestination(client, settings)
     processor = Processor(settings, destination=destination, progress=_print_progress)
     try:
-        summary = processor.run(
-            args.source,
-            output_dir=getattr(args, "output", None),
-            force=getattr(args, "force", False),
-        )
+        if args.command == "upload":
+            preview = processor.preview_upload_from_sd(args.source)
+            print(f"{len(preview.items)} MF4 files found.")
+            print(f"{preview.upload_count} raw files will be uploaded.")
+            for item in preview.items:
+                status = "already uploaded" if item.raw_exists else "will upload"
+                print(f"{item.calendar_date}  Raw/{item.raw_filename}  {status}")
+            if args.preview:
+                return 0
+            summary = processor.upload_from_sd(args.source, preview)
+        elif args.command == "redecode-cloud":
+            summary = processor.redecode_cloud_days(args.days)
+        else:
+            summary = processor.decode_local(args.inputs, args.output)
     except (CancelledError, KeyboardInterrupt):
         print("Cancelled.", file=sys.stderr)
         return 130
