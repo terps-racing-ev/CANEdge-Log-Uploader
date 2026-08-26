@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import tempfile
 from contextlib import nullcontext
 from pathlib import Path
@@ -25,9 +26,31 @@ from .naming import make_artifact_plans, make_raw_artifact_plan
 
 log = logging.getLogger(__name__)
 
+CAN_MESSAGE_COMMENT_RE = re.compile(r"<TX>.*? - ([^<]+)</TX>", re.DOTALL)
+
 
 class CancelledError(RuntimeError):
     pass
+
+
+def clean_can_source_names(mdf: Any) -> None:
+    """Use DBC message names for decoded CAN source labels."""
+    for group in getattr(mdf, "groups", []):
+        for channel in getattr(group, "channels", []):
+            source = getattr(channel, "source", None)
+            if source is None:
+                continue
+
+            match = CAN_MESSAGE_COMMENT_RE.search(getattr(source, "comment", "") or "")
+            if not match:
+                continue
+
+            message_name = match.group(1).strip()
+            if not message_name:
+                continue
+
+            source.name = message_name
+            source.path = message_name
 
 
 class Processor:
@@ -287,6 +310,7 @@ class Processor:
                 version="4.10",
                 progress=self._decode_progress(source),
             )
+            clean_can_source_names(decoded)
             decoded.header.start_time = context.start_time
             summary.decoded += 1
             if plans is None:
