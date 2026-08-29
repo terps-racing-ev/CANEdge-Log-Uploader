@@ -7,14 +7,14 @@ from canedge_uploader.config import load_settings
 
 
 class ConfigTests(unittest.TestCase):
-    def test_decode_can_bus_defaults_to_bus_1(self):
+    def test_decode_can_bus_defaults_to_all_buses(self):
         with patch.dict("os.environ", {}, clear=True):
             with tempfile.TemporaryDirectory() as directory:
                 dbc_dir = Path(directory) / "dbc"
                 dbc_dir.mkdir()
                 settings = load_settings(env_file=Path(directory) / "missing.env", dbc_dir=dbc_dir)
 
-        self.assertEqual(settings.decode_can_bus, 1)
+        self.assertEqual(settings.decode_can_bus, 0)
 
     def test_decode_can_bus_can_be_configured(self):
         with patch.dict("os.environ", {}, clear=True):

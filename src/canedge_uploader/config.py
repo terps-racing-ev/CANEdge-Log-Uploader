@@ -28,7 +28,7 @@ class Settings:
     output_parent_sp_path: str
     dbc_dir: Path
     timezone: str = "America/New_York"
-    decode_can_bus: int = 1
+    decode_can_bus: int = 0
     upload_chunk_mib: int = 10
 
     @property
@@ -61,6 +61,6 @@ def load_settings(env_file: Path | None = None, dbc_dir: Path | None = None) -> 
         output_parent_sp_path=value("OUTPUT_PARENT_SP_PATH"),
         dbc_dir=resolved_dbc.expanduser().resolve(),
         timezone=value("OUTPUT_TIMEZONE", "America/New_York"),
-        decode_can_bus=int(value("DECODE_CAN_BUS", "1")),
+        decode_can_bus=int(value("DECODE_CAN_BUS", "0")),
         upload_chunk_mib=int(value("UPLOAD_CHUNK_MIB", "10")),
     )

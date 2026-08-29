@@ -69,7 +69,7 @@ canedge-uploader process CANEDGE_OUTPUT\LOGS\00000489\00000001.MF4 --output deco
 canedge-uploader process CANEDGE_OUTPUT\LOGS\00000489 --output decoded_output
 ```
 
-Decoded output defaults to CAN bus 1 only so mirrored messages recorded on multiple buses are not duplicated. Set `DECODE_CAN_BUS=0` to decode all buses, or set another bus number such as `2` to keep that bus instead.
+Decoded output defaults to all CAN buses. Set `DECODE_CAN_BUS` to a bus number such as `1` or `2` if mirrored traffic should be decoded from only one bus.
 
 The rotating debug log lives at `%LOCALAPPDATA%\CANedgeUploader\logs\canedge-uploader.log`. A Microsoft token cache is stored beside it and is excluded from the repository.
 
