@@ -9,6 +9,14 @@ BU_: DBF DBL DBR Vector__XXX
 BO_ 2376073216 DBF_Status: 8 DBF
  SG_ DBF_Status_Timestamp : 0|32@1+ (1.0,0.0) [0.0|4294967295.0] "ms" Vector__XXX
 
+BO_ 2376073217 DBF_CAN_Statistics: 8 DBF
+ SG_ DBF_CAN_Statistics_RX_Message_Count : 0|16@1+ (1.0,0.0) [0.0|65535.0] "count" Vector__XXX
+ SG_ DBF_CAN_Statistics_TX_Success_Count : 16|16@1+ (1.0,0.0) [0.0|65535.0] "count" Vector__XXX
+ SG_ DBF_CAN_Statistics_TX_Error_Count : 32|8@1+ (1.0,0.0) [0.0|255.0] "count" Vector__XXX
+ SG_ DBF_CAN_Statistics_RX_Queue_Full_Count : 40|8@1+ (1.0,0.0) [0.0|255.0] "count" Vector__XXX
+ SG_ DBF_CAN_Statistics_Bus_Off_Count : 48|8@1+ (1.0,0.0) [0.0|255.0] "count" Vector__XXX
+ SG_ DBF_CAN_Statistics_TX_Queue_Full_Count : 56|8@1+ (1.0,0.0) [0.0|255.0] "count" Vector__XXX
+
 BO_ 2376138752 DBF_WSPD_FL: 8 DBF
  SG_ DBF_WSPD_FL_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
  SG_ DBF_WSPD_FL_Timeout : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
@@ -71,6 +79,11 @@ BO_ 2376597504 DBF_Accel_Timer: 8 DBF
  SG_ DBF_Accel_Timer_FR_Time : 32|16@1+ (1.0,0.0) [0.0|65535.0] "ms" Vector__XXX
  SG_ DBF_Accel_Timer_Avg_Time : 48|16@1+ (1.0,0.0) [0.0|65535.0] "ms" Vector__XXX
 
+BO_ 2376531968 DBF_Acceleration: 8 DBF
+ SG_ DBF_Acceleration_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ DBF_Acceleration_mps2 : 8|16@1- (0.01,0.0) [-327.68|327.67] "m/s^2" Vector__XXX
+ SG_ DBF_Acceleration_Speed : 24|16@1+ (0.01,0.0) [0.0|655.35] "MPH" Vector__XXX
+
 BO_ 2376601600 DBF_Accel_Timer_Distance: 8 DBF
  SG_ DBF_Accel_Timer_Dist_Enabled : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
  SG_ DBF_Accel_Timer_Dist_Running : 1|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
@@ -84,12 +97,21 @@ BO_ 2376663040 DBF_ODO_LR: 8 DBF
  SG_ FL_Odo : 32|32@1+ (1.0,0.0) [0.0|4294967295.0] "" Vector__XXX
 
 BO_ 2376728576 DBF_Lidar: 8 DBF
- SG_ Lidar_Height : 0|16@1+ (1.0,0.0) [0.0|65535.0] "" Vector__XXX
- SG_ Lidar_Strength : 16|16@1+ (1.0,0.0) [0.0|65535.0] "" Vector__XXX
- SG_ Lidar_Temp : 32|16@1+ (1.0,0.0) [0.0|65535.0] "" Vector__XXX
+ SG_ Lidar_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
+ SG_ Lidar_Height : 8|16@1+ (1.0,0.0) [0.0|65535.0] "mm" Vector__XXX
+ SG_ Lidar_Strength : 24|16@1+ (1.0,0.0) [0.0|100.0] "%" Vector__XXX
+ SG_ Lidar_Temp : 40|16@1- (1.0,0.0) [-256.0|7935.0] "C" Vector__XXX
 
 BO_ 2377121792 DBL_Status: 8 DBL
  SG_ DBL_Status_Timestamp : 0|32@1+ (1.0,0.0) [0.0|4294967295.0] "ms" Vector__XXX
+
+BO_ 2377121793 DBL_CAN_Statistics: 8 DBL
+ SG_ DBL_CAN_Statistics_RX_Message_Count : 0|16@1+ (1.0,0.0) [0.0|65535.0] "count" Vector__XXX
+ SG_ DBL_CAN_Statistics_TX_Success_Count : 16|16@1+ (1.0,0.0) [0.0|65535.0] "count" Vector__XXX
+ SG_ DBL_CAN_Statistics_TX_Error_Count : 32|8@1+ (1.0,0.0) [0.0|255.0] "count" Vector__XXX
+ SG_ DBL_CAN_Statistics_RX_Queue_Full_Count : 40|8@1+ (1.0,0.0) [0.0|255.0] "count" Vector__XXX
+ SG_ DBL_CAN_Statistics_Bus_Off_Count : 48|8@1+ (1.0,0.0) [0.0|255.0] "count" Vector__XXX
+ SG_ DBL_CAN_Statistics_TX_Queue_Full_Count : 56|8@1+ (1.0,0.0) [0.0|255.0] "count" Vector__XXX
 
 BO_ 2377187328 DBL_WSPD_BL: 8 DBL
  SG_ DBL_WSPD_BL_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
@@ -107,6 +129,14 @@ BO_ 2377252864 DBL_Shock_BL: 8 DBL
 
 BO_ 2378170368 DBR_Status: 8 DBR
  SG_ DBR_Status_Timestamp : 0|32@1+ (1.0,0.0) [0.0|4294967295.0] "ms" Vector__XXX
+
+BO_ 2378170369 DBR_CAN_Statistics: 8 DBR
+ SG_ DBR_CAN_Statistics_RX_Message_Count : 0|16@1+ (1.0,0.0) [0.0|65535.0] "count" Vector__XXX
+ SG_ DBR_CAN_Statistics_TX_Success_Count : 16|16@1+ (1.0,0.0) [0.0|65535.0] "count" Vector__XXX
+ SG_ DBR_CAN_Statistics_TX_Error_Count : 32|8@1+ (1.0,0.0) [0.0|255.0] "count" Vector__XXX
+ SG_ DBR_CAN_Statistics_RX_Queue_Full_Count : 40|8@1+ (1.0,0.0) [0.0|255.0] "count" Vector__XXX
+ SG_ DBR_CAN_Statistics_Bus_Off_Count : 48|8@1+ (1.0,0.0) [0.0|255.0] "count" Vector__XXX
+ SG_ DBR_CAN_Statistics_TX_Queue_Full_Count : 56|8@1+ (1.0,0.0) [0.0|255.0] "count" Vector__XXX
 
 BO_ 2378235904 DBR_WSPD_BR: 8 DBR
  SG_ DBR_WSPD_BR_Valid : 0|1@1+ (1.0,0.0) [0.0|1.0] "" Vector__XXX
@@ -182,6 +212,7 @@ BO_ 2378510336 DBR_CT_RAD2: 8 DBR
  SG_ DBR_CT_RAD2_Filt_mV : 24|16@1- (0.001,0.0) [-1000.0|1000.0] "V" Vector__XXX
  SG_ DBR_CT_RAD2_Deg_C : 40|8@1- (1.0,0.0) [-40.0|120.0] "C" Vector__XXX
 
+VAL_ 2376728576 Lidar_Valid 0 "FALSE" 1 "TRUE" ;
 VAL_ 2376138752 DBF_WSPD_FL_Valid 0 "FALSE" 1 "TRUE" ;
 VAL_ 2376138752 DBF_WSPD_FL_Timeout 0 "FALSE" 1 "TRUE" ;
 VAL_ 2376142848 DBF_WSPD_FR_Valid 0 "FALSE" 1 "TRUE" ;
@@ -204,6 +235,10 @@ VAL_ 2376597504 DBF_Accel_Timer_Avg_Complete 0 "FALSE" 1 "TRUE" ;
 VAL_ 2376601600 DBF_Accel_Timer_Dist_Enabled 0 "FALSE" 1 "TRUE" ;
 VAL_ 2376601600 DBF_Accel_Timer_Dist_Running 0 "FALSE" 1 "TRUE" ;
 VAL_ 2376601600 DBF_Accel_Timer_Dist_Complete 0 "FALSE" 1 "TRUE" ;
+CM_ BO_ 2376728576 "Front-board ride height. Valid indicates a complete frame received since the previous sensor update, without checksum or measurement-quality validation. Distance is in mm; strength is raw * 100 / 65535 rounded down; temperature is raw / 8 - 256 truncated toward zero in Celsius. Firmware performs these conversions before CAN transmission. Byte 7 is reserved and zero.";
+CM_ BO_ 2376073411 "Front-board acceleration timer command. Send this extended frame to 0x0DA000C3 for DBF: command 0 disables the timer, 1 clears prior results and arms the timer, and 2 clears results while preserving the current enabled state.";
+CM_ BO_ 2376597504 "Front-board acceleration timer result/status. After enable, the first FL or FR wheel-speed pulse starts timing. The timer uses a 17.66 in front tire diameter, 16 wheel-speed pulses per revolution, and a 246 ft target. Completion bits indicate valid FL-only, FR-only, and averaged-wheel elapsed times in milliseconds.";
+CM_ BO_ 2376601600 "Front-board acceleration timer live distance. Distances use the 17.66 in front tire diameter and 16 wheel-speed pulses per revolution. FL, FR, and averaged front-wheel distances are reported in feet while the timer is armed/running and hold their final values after completion.";
 VAL_ 2377383936 DBL_PITOT_SIDEPOD_Valid 0 "FALSE" 1 "TRUE" ;
 VAL_ 2377383936 DBL_PITOT_SIDEPOD_ADC_Err 0 "FALSE" 1 "TRUE" ;
 VAL_ 2377388032 DBL_PITOT_FW_Valid 0 "FALSE" 1 "TRUE" ;
@@ -224,6 +259,3 @@ VAL_ 2378506240 DBR_CT_INV_Out_of_Range 0 "FALSE" 1 "TRUE" ;
 VAL_ 2378510336 DBR_CT_RAD2_Valid 0 "FALSE" 1 "TRUE" ;
 VAL_ 2378510336 DBR_CT_RAD2_ADC_Err 0 "FALSE" 1 "TRUE" ;
 VAL_ 2378510336 DBR_CT_RAD2_Out_of_Range 0 "FALSE" 1 "TRUE" ;
-CM_ BO_ 2376073411 "Front-board acceleration timer command. Send this extended frame to 0x0DA000C3 for DBF: command 0 disables the timer, 1 clears prior results and arms the timer, and 2 clears results while preserving the current enabled state.";
-CM_ BO_ 2376597504 "Front-board acceleration timer result/status. After enable, the first FL or FR wheel-speed pulse starts timing. The timer uses a 17.66 in front tire diameter, 16 wheel-speed pulses per revolution, and a 246 ft target. Completion bits indicate valid FL-only, FR-only, and averaged-wheel elapsed times in milliseconds.";
-CM_ BO_ 2376601600 "Front-board acceleration timer live distance. Distances use the 17.66 in front tire diameter and 16 wheel-speed pulses per revolution. FL, FR, and averaged front-wheel distances are reported in feet while the timer is armed/running and hold their final values after completion.";

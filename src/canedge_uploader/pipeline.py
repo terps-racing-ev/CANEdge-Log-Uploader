@@ -5,9 +5,11 @@ import os
 import re
 import tempfile
 from contextlib import nullcontext
+from datetime import datetime
 from pathlib import Path
 from threading import Event
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from . import rules
 from .config import Settings
@@ -27,6 +29,8 @@ from .naming import make_artifact_plans, make_raw_artifact_plan
 log = logging.getLogger(__name__)
 
 CAN_MESSAGE_COMMENT_RE = re.compile(r"<TX>.*? - ([^<]+)</TX>", re.DOTALL)
+RAW_UPLOAD_FILENAME_RE = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_.+_RAW\.mf4$", re.IGNORECASE)
+RAW_UPLOAD_TIMESTAMP_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2}-\d{2})_")
 
 
 class CancelledError(RuntimeError):
@@ -99,26 +103,49 @@ class Processor:
         files = discover_mf4_files(source_root)
         self.prepare_destination()
         self._emit("scan", f"Found {len(files)} MF4 files on {source_root}")
+        self._file_total = len(files)
+        self._emit("check", "Finding latest SharePoint raw log")
+        latest_raw = self._latest_uploaded_raw()
+        latest_raw_time = self._latest_raw_time(latest_raw)
         items: list[UploadPreviewItem] = []
         for index, source in enumerate(files, start=1):
             self._active_file_index = index
-            self._file_total = len(files)
-            context = self._inspect_context(source, source_root)
-            raw_plan = make_raw_artifact_plan(context)
-            raw_exists = raw_plan.filename in self._raw_remote_names(raw_plan.calendar_date)
+            self._check_cancel()
+            timestamp = self._filesystem_time(source)
+            if latest_raw_time and timestamp <= latest_raw_time:
+                local_time = timestamp.astimezone(ZoneInfo(self.settings.timezone))
+                raw_exists = True
+                calendar_date = local_time.date().isoformat()
+                raw_filename = source.name
+                self._emit(
+                    "preview",
+                    f"Skipping older SD file {source.name} ({index}/{len(files)})",
+                    index,
+                    len(files),
+                    source,
+                )
+            else:
+                self._emit("preview", f"Inspecting new file {source.name} ({index}/{len(files)})", index, len(files), source)
+                context = self._inspect_context(source, source_root)
+                raw_plan = make_raw_artifact_plan(context)
+                self._check_cancel()
+                raw_exists = self._raw_plan_is_at_or_before_latest(raw_plan, latest_raw)
+                calendar_date = raw_plan.calendar_date
+                raw_filename = raw_plan.filename
             items.append(
                 UploadPreviewItem(
                     source_path=source,
-                    calendar_date=raw_plan.calendar_date,
-                    raw_filename=raw_plan.filename,
+                    calendar_date=calendar_date,
+                    raw_filename=raw_filename,
                     raw_exists=raw_exists,
                 )
             )
+            self._emit("file_complete", f"Previewed file {index} of {len(files)}", index, len(files), source)
         return UploadPreview(source_root, items, decoded_filenames_known=not rules.requires_decoded_data())
 
     def upload_from_sd(self, source_root: Path, preview: UploadPreview | None = None) -> RunSummary:
         source_root = source_root.expanduser().resolve()
-        files = [item.source_path for item in preview.items] if preview else discover_mf4_files(source_root)
+        files = [item.source_path for item in preview.items if not item.raw_exists] if preview else discover_mf4_files(source_root)
         summary = RunSummary(discovered=len(files))
         self._file_total = len(files)
         if not files:
@@ -487,6 +514,41 @@ class Processor:
         if cache_key not in self._remote_name_cache:
             self._remote_name_cache[cache_key] = self.destination.names_in_date(calendar_date, subfolder="Raw")
         return self._remote_name_cache[cache_key]
+
+    def _latest_uploaded_raw(self) -> tuple[str, str] | None:
+        for day in self.destination.list_date_folders():
+            self._check_cancel()
+            names = [
+                str(item.get("name", ""))
+                for item in self.destination.raw_items_in_date(day)
+                if RAW_UPLOAD_FILENAME_RE.match(str(item.get("name", "")))
+            ]
+            if names:
+                return day, max(names)
+        return None
+
+    def _latest_raw_time(self, latest_raw: tuple[str, str] | None) -> datetime | None:
+        if latest_raw is None:
+            return None
+        match = RAW_UPLOAD_TIMESTAMP_RE.match(latest_raw[1])
+        if not match:
+            return None
+        value = f"{match.group(1)} {match.group(2).replace('-', ':')}"
+        return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=ZoneInfo(self.settings.timezone))
+
+    def _raw_plan_is_at_or_before_latest(self, plan: ArtifactPlan, latest_raw: tuple[str, str] | None) -> bool:
+        if latest_raw is None:
+            return False
+        latest_date, latest_filename = latest_raw
+        if plan.calendar_date < latest_date:
+            return True
+        if plan.calendar_date > latest_date:
+            return False
+        return plan.filename <= latest_filename
+
+    def _filesystem_time(self, path: Path) -> datetime:
+        stat = path.stat()
+        return datetime.fromtimestamp(max(stat.st_ctime, stat.st_mtime), ZoneInfo(self.settings.timezone))
 
     def _recording_duration(self, mdf) -> float:
         last_timestamp = getattr(mdf, "last_timestamp", None)

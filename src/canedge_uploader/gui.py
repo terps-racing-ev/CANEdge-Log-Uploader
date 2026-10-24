@@ -33,6 +33,8 @@ def _overall_percent(event: ProgressEvent) -> float:
     stage_fraction = {
         "file": 0.02,
         "cleanup": 0.02,
+        "preview": 0.2,
+        "check": 0.7,
         "download": 0.18,
         "skip": 1.0,
         "error": 1.0,
