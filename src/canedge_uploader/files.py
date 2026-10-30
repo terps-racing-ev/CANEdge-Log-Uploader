@@ -2,8 +2,45 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
+from dataclasses import dataclass
 from pathlib import Path
 from zoneinfo import ZoneInfo
+
+
+CANEDGE_DEVICE_RE = re.compile(r"^[0-9A-F]{8}$", re.IGNORECASE)
+CANEDGE_INDEX_RE = re.compile(r"^\d{8}$")
+
+
+@dataclass(frozen=True)
+class CanedgeLog:
+    """A logger-written file at <device>/<session>/<split>.MF4."""
+
+    path: Path
+    device_id: str
+    session: int
+    split: int
+
+    @property
+    def position(self) -> tuple[int, int]:
+        return self.session, self.split
+
+    @property
+    def label(self) -> str:
+        return f"{self.device_id}/{self.path.parent.name}/{self.path.name}"
+
+
+def discover_canedge_logs(folder: Path) -> list[CanedgeLog]:
+    """Find CANedge session logs, oldest first per device, ignoring trash and copied files."""
+    folder = folder.expanduser().resolve()
+    logs: list[CanedgeLog] = []
+    for path in discover_mf4_files(folder):
+        if any(part.startswith(".") for part in path.relative_to(folder).parts):
+            continue
+        device, session = path.parent.parent.name, path.parent.name
+        if CANEDGE_DEVICE_RE.match(device) and CANEDGE_INDEX_RE.match(session) and CANEDGE_INDEX_RE.match(path.stem):
+            logs.append(CanedgeLog(path, device.upper(), int(session), int(path.stem)))
+    return sorted(logs, key=lambda log: (log.device_id, log.position))
 
 
 def discover_mf4_files(folder: Path) -> list[Path]:
@@ -49,7 +86,7 @@ def detect_removable_source() -> Path | None:
     with_logs = [root for root in candidates if (root / "LOG").exists() or (root / "LOGS").exists()]
     for root in with_logs + candidates:
         try:
-            if discover_mf4_files(root):
+            if discover_canedge_logs(root):
                 return root
         except OSError:
             continue

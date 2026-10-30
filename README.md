@@ -32,7 +32,7 @@ The app reads `env` first, then `.env`. DBCs default to the repository's `dbc/` 
 
 This is the primary path. The app auto-detects a removable drive when it can. If it cannot, click **Choose SD Card...** and select the SD card root. You do not need to open `LOGS`, `CANEDGE_OUTPUT`, or any logger subfolder.
 
-Click **Preview Upload** first. The preview shows the raw MF4 files found on the card and whether each raw file already exists in SharePoint. After review, click **Upload**. Decoded outputs are generated from the same raw logs during processing.
+Click **Preview Upload** first. The preview lists the logs on the card that still need uploading. Only logger files at `LOG/<device>/<session>/<split>.MF4` are considered, so trash folders and copies are ignored. The app tracks the last uploaded session and split per device in `_uploader_state.json` in the SharePoint root folder, and everything after it on the card is new. If a device has no record yet, or the card's newest session is older than the record (for example after a reformat), the preview falls back to comparing against the newest raw file in SharePoint and says so. After review, click **Upload**. The record only advances past logs that finished successfully, in order, so a failed log is offered again next time. Decoded outputs are generated from the same raw logs during processing.
 
 **Re-decode existing**
 

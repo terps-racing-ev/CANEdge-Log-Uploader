@@ -74,11 +74,11 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "upload":
             preview = processor.preview_upload_from_sd(args.source)
-            print(f"{len(preview.items)} MF4 files found.")
-            print(f"{preview.upload_count} raw files will be uploaded.")
-            for item in preview.items:
-                status = "already uploaded" if item.raw_exists else "will upload"
-                print(f"{item.calendar_date}  Raw/{item.raw_filename}  {status}")
+            print(f"{len(preview.items)} CANedge logs found; {preview.upload_count} will upload.")
+            for note in preview.notes:
+                print(note)
+            for item in preview.upload_items:
+                print(f"{item.calendar_date}  Raw/{item.raw_filename}")
             if args.preview:
                 return 0
             summary = processor.upload_from_sd(args.source, preview)

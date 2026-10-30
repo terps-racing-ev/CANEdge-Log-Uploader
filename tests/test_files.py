@@ -3,7 +3,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from canedge_uploader.files import discover_mf4_files, eastern_time, infer_device_id, mf4_inputs
+from canedge_uploader.files import discover_canedge_logs, discover_mf4_files, eastern_time, infer_device_id, mf4_inputs
 
 
 class FileTests(unittest.TestCase):
@@ -16,6 +16,27 @@ class FileTests(unittest.TestCase):
             (nested / "two.mf4").write_bytes(b"two")
             (nested / "no.txt").write_bytes(b"no")
             self.assertEqual(len(discover_mf4_files(tmp_path)), 2)
+
+    def test_canedge_discovery_keeps_only_session_logs_in_order(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            device = root / "LOG" / "9B3425A8"
+            for relative in [
+                "00000010/00000002.MF4",
+                "00000010/00000001.MF4",
+                "00000009/00000001.MF4",
+                "00000010/._00000003.MF4",
+            ]:
+                (device / relative).parent.mkdir(parents=True, exist_ok=True)
+                (device / relative).write_bytes(b"")
+            for relative in [".Trashes/501/00000062/00000001.MF4", ".Trashes/9B3425A8/00000062/00000001.MF4", "bak/copy.MF4"]:
+                (root / relative).parent.mkdir(parents=True, exist_ok=True)
+                (root / relative).write_bytes(b"")
+
+            logs = discover_canedge_logs(root)
+
+            self.assertEqual([log.position for log in logs], [(9, 1), (10, 1), (10, 2)])
+            self.assertEqual({log.device_id for log in logs}, {"9B3425A8"})
 
     def test_utc_to_eastern_is_dst_aware(self):
         summer = eastern_time(datetime(2026, 8, 4, 3, tzinfo=timezone.utc), "America/New_York")

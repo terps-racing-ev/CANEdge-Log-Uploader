@@ -41,6 +41,7 @@ def _overall_percent(event: ProgressEvent) -> float:
         "save": 0.78,
         "saved": 0.82,
         "upload": 0.82,
+        "state": 1.0,
         "file_complete": 1.0,
     }.get(event.stage, 0.0)
     if event.stage == "decode":
@@ -386,17 +387,19 @@ class UploaderWindow:
     def _handle_preview(self, preview: UploadPreview):
         self.upload_preview = preview
         self.preview_source = str(preview.source_root.resolve())
+        upload_items = preview.upload_items
         lines = [
-            f"{len(preview.items)} MF4 files found on {preview.source_root}",
-            f"{preview.upload_count} raw files will be uploaded; {len(preview.items) - preview.upload_count} raw files are already in SharePoint.",
+            f"{len(preview.items)} CANedge logs found on {preview.source_root}; {preview.upload_count} will upload.",
+            *preview.notes,
+        ]
+        lines += [
             "Decoded outputs will be generated during upload from the same raw logs.",
             "",
         ]
-        for item in preview.items[:200]:
-            status = "raw already uploaded" if item.raw_exists else "raw will upload"
-            lines.append(f"{item.calendar_date}  {item.raw_filename}  [{status}]")
-        if len(preview.items) > 200:
-            lines.append(f"... plus {len(preview.items) - 200} more")
+        for item in upload_items[:200]:
+            lines.append(f"{item.calendar_date}  {item.raw_filename}")
+        if len(upload_items) > 200:
+            lines.append(f"... plus {len(upload_items) - 200} more")
         self._set_preview("\n".join(lines))
         self.status.set("Preview ready. Review the list, then click Upload.")
         self._set_idle()

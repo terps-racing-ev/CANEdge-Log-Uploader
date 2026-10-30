@@ -41,6 +41,9 @@ class UploadPreviewItem:
     calendar_date: str
     raw_filename: str
     raw_exists: bool = False
+    device_id: str = ""
+    session: int = 0
+    split: int = 0
 
 
 @dataclass(frozen=True)
@@ -48,10 +51,15 @@ class UploadPreview:
     source_root: Path
     items: list[UploadPreviewItem]
     decoded_filenames_known: bool
+    notes: list[str] = field(default_factory=list)
+
+    @property
+    def upload_items(self) -> list[UploadPreviewItem]:
+        return [item for item in self.items if not item.raw_exists]
 
     @property
     def upload_count(self) -> int:
-        return sum(1 for item in self.items if not item.raw_exists)
+        return len(self.upload_items)
 
 
 @dataclass(frozen=True)

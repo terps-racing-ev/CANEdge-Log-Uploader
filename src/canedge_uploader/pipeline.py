@@ -5,15 +5,16 @@ import os
 import re
 import tempfile
 from contextlib import nullcontext
-from datetime import datetime
+from datetime import datetime, timezone
+from itertools import groupby
 from pathlib import Path
 from threading import Event
-from typing import Any
+from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
 from . import rules
 from .config import Settings
-from .files import discover_dbcs, discover_mf4_files, eastern_time, infer_device_id, mf4_inputs
+from .files import discover_canedge_logs, discover_dbcs, eastern_time, infer_device_id, mf4_inputs
 from .models import (
     ArtifactPlan,
     CloudDay,
@@ -31,6 +32,7 @@ log = logging.getLogger(__name__)
 CAN_MESSAGE_COMMENT_RE = re.compile(r"<TX>.*? - ([^<]+)</TX>", re.DOTALL)
 RAW_UPLOAD_FILENAME_RE = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_.+_RAW\.mf4$", re.IGNORECASE)
 RAW_UPLOAD_TIMESTAMP_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2}-\d{2})_")
+UPLOAD_STATE_VERSION = 1
 
 
 class CancelledError(RuntimeError):
@@ -100,56 +102,92 @@ class Processor:
         if not self.destination:
             raise RuntimeError("Upload preview requires a SharePoint destination")
         source_root = source_root.expanduser().resolve()
-        files = discover_mf4_files(source_root)
+        logs = discover_canedge_logs(source_root)
         self.prepare_destination()
-        self._emit("scan", f"Found {len(files)} MF4 files on {source_root}")
-        self._file_total = len(files)
-        self._emit("check", "Finding latest SharePoint raw log")
-        latest_raw = self._latest_uploaded_raw()
-        latest_raw_time = self._latest_raw_time(latest_raw)
+        self._emit("scan", f"Found {len(logs)} CANedge logs on {source_root}")
+        self._file_total = len(logs)
+        self._emit("check", "Reading SharePoint upload record")
+        uploaded = self._uploaded_positions()
+        notes: list[str] = []
+        fallback_devices: set[str] = set()
+        for device_id, device_logs in groupby(logs, key=lambda log: log.device_id):
+            newest = list(device_logs)[-1]
+            last = uploaded.get(device_id)
+            if last is None:
+                fallback_devices.add(device_id)
+                notes.append(f"{device_id}: no upload record yet, so SharePoint timestamps were used to find new logs.")
+            elif newest.position < last:
+                fallback_devices.add(device_id)
+                notes.append(
+                    f"{device_id}: card ends at session {newest.session} but session {last[0]} was already uploaded. "
+                    "The card may have been reformatted, so SharePoint timestamps were used to find new logs."
+                )
+
+        latest_raw = None
+        latest_raw_time = None
+        if fallback_devices:
+            self._emit("check", "Finding latest SharePoint raw log")
+            latest_raw = self._latest_uploaded_raw()
+            latest_raw_time = self._latest_raw_time(latest_raw)
+
         items: list[UploadPreviewItem] = []
-        for index, source in enumerate(files, start=1):
+        for index, entry in enumerate(logs, start=1):
             self._active_file_index = index
             self._check_cancel()
-            timestamp = self._filesystem_time(source)
-            if latest_raw_time and timestamp <= latest_raw_time:
-                local_time = timestamp.astimezone(ZoneInfo(self.settings.timezone))
-                raw_exists = True
-                calendar_date = local_time.date().isoformat()
-                raw_filename = source.name
-                self._emit(
-                    "preview",
-                    f"Skipping older SD file {source.name} ({index}/{len(files)})",
-                    index,
-                    len(files),
-                    source,
-                )
+            by_timestamp = entry.device_id in fallback_devices
+            if by_timestamp:
+                already_uploaded = latest_raw_time is not None and self._filesystem_time(entry.path) <= latest_raw_time
             else:
-                self._emit("preview", f"Inspecting new file {source.name} ({index}/{len(files)})", index, len(files), source)
-                context = self._inspect_context(source, source_root)
+                already_uploaded = entry.position <= uploaded[entry.device_id]
+            if already_uploaded:
+                self._emit("preview", f"Skipping uploaded log {entry.label} ({index}/{len(logs)})", index, len(logs), entry.path)
+                calendar_date = ""
+                raw_filename = entry.path.name
+            else:
+                self._emit("preview", f"Inspecting new log {entry.label} ({index}/{len(logs)})", index, len(logs), entry.path)
+                context = self._inspect_context(entry.path, source_root)
                 raw_plan = make_raw_artifact_plan(context)
                 self._check_cancel()
-                raw_exists = self._raw_plan_is_at_or_before_latest(raw_plan, latest_raw)
+                already_uploaded = by_timestamp and self._raw_plan_is_at_or_before_latest(raw_plan, latest_raw)
                 calendar_date = raw_plan.calendar_date
                 raw_filename = raw_plan.filename
             items.append(
                 UploadPreviewItem(
-                    source_path=source,
+                    source_path=entry.path,
                     calendar_date=calendar_date,
                     raw_filename=raw_filename,
-                    raw_exists=raw_exists,
+                    raw_exists=already_uploaded,
+                    device_id=entry.device_id,
+                    session=entry.session,
+                    split=entry.split,
                 )
             )
-            self._emit("file_complete", f"Previewed file {index} of {len(files)}", index, len(files), source)
-        return UploadPreview(source_root, items, decoded_filenames_known=not rules.requires_decoded_data())
+            self._emit("file_complete", f"Previewed file {index} of {len(logs)}", index, len(logs), entry.path)
+
+        for device_id, (session, split) in uploaded.items():
+            skipped = sum(1 for item in items if item.device_id == device_id and item.raw_exists)
+            if skipped and device_id not in fallback_devices:
+                notes.append(f"{device_id}: {skipped} skipped (session {session} split {split} and earlier already uploaded).")
+        timestamp_skipped = sum(1 for item in items if item.device_id in fallback_devices and item.raw_exists)
+        if timestamp_skipped and latest_raw:
+            notes.append(f"{timestamp_skipped} skipped (at or before latest SharePoint raw: {latest_raw[1]}).")
+        return UploadPreview(
+            source_root,
+            items,
+            decoded_filenames_known=not rules.requires_decoded_data(),
+            notes=notes,
+        )
 
     def upload_from_sd(self, source_root: Path, preview: UploadPreview | None = None) -> RunSummary:
         source_root = source_root.expanduser().resolve()
-        files = [item.source_path for item in preview.items if not item.raw_exists] if preview else discover_mf4_files(source_root)
+        if preview is None:
+            preview = self.preview_upload_from_sd(source_root)
+        upload_items = preview.upload_items
+        files = [item.source_path for item in upload_items]
         summary = RunSummary(discovered=len(files))
         self._file_total = len(files)
         if not files:
-            self._emit("scan", "No MF4 files were found")
+            self._emit("scan", "No new CANedge logs to upload")
             return summary
         if not self.destination:
             raise RuntimeError("Upload requires a SharePoint destination")
@@ -166,8 +204,52 @@ class Processor:
                 skip_existing_decoded=True,
                 overwrite_decoded=False,
                 overwrite_raw=False,
+                on_result=self._upload_state_recorder(upload_items),
             )
         return self._complete(summary)
+
+    def _uploaded_positions(self) -> dict[str, tuple[int, int]]:
+        devices = self.destination.read_upload_state().get("devices", {})
+        return {device_id.upper(): (int(entry["session"]), int(entry["split"])) for device_id, entry in devices.items()}
+
+    def _upload_state_recorder(self, items: list[UploadPreviewItem]) -> Callable[[Path, bool], None]:
+        """Advance each device's upload record only across an unbroken run of successful files."""
+        by_path = {item.source_path: item for item in items}
+        stalled: set[str] = set()
+
+        def record(source: Path, ok: bool) -> None:
+            item = by_path.get(source)
+            if item is None or not item.device_id or item.device_id in stalled:
+                return
+            if not ok:
+                stalled.add(item.device_id)
+                return
+            try:
+                self._record_uploaded(item)
+            except CancelledError:
+                raise
+            except Exception as exc:
+                stalled.add(item.device_id)
+                log.exception("Failed to update upload record for %s", source)
+                self._emit("error", f"Could not update SharePoint upload record: {exc}", file=source)
+
+        return record
+
+    def _record_uploaded(self, item: UploadPreviewItem) -> None:
+        state = self.destination.read_upload_state()
+        devices = state.setdefault("devices", {})
+        current = devices.get(item.device_id)
+        if current and (int(current["session"]), int(current["split"])) >= (item.session, item.split):
+            return
+        devices[item.device_id] = {
+            "session": item.session,
+            "split": item.split,
+            "raw": item.raw_filename,
+            "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        }
+        state["version"] = UPLOAD_STATE_VERSION
+        self.destination.write_upload_state(state)
+        self._emit("state", f"Recorded {item.device_id} session {item.session} split {item.split} as uploaded", file=item.source_path)
 
     def decode_local(self, inputs: list[Path], output_dir: Path) -> RunSummary:
         files = mf4_inputs(inputs)
@@ -263,6 +345,7 @@ class Processor:
         skip_existing_decoded: bool,
         overwrite_decoded: bool,
         overwrite_raw: bool,
+        on_result: Callable[[Path, bool], None] | None = None,
     ) -> None:
         dbcs = discover_dbcs(self.settings.dbc_dir)
         if not files:
@@ -294,6 +377,11 @@ class Processor:
                     summary.failed += 1
                     log.exception("Failed to process %s", source)
                     self._emit("error", f"{source}: {exc}", index, len(files), source)
+                    if on_result:
+                        on_result(source, False)
+                else:
+                    if on_result:
+                        on_result(source, True)
                 finally:
                     if not self.cancel.is_set():
                         self._emit("file_complete", f"Finished file {index} of {len(files)}", index, len(files), source)

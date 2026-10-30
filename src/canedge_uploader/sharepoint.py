@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 import threading
@@ -14,6 +15,7 @@ GRAPH_BASE = "https://graph.microsoft.com/v1.0"
 SCOPES = ["Sites.Selected"]
 SIMPLE_UPLOAD_LIMIT = 4 * 1024 * 1024
 CHUNK_GRANULARITY = 320 * 1024
+UPLOAD_STATE_FILENAME = "_uploader_state.json"
 
 log = logging.getLogger(__name__)
 
@@ -175,6 +177,25 @@ class SharePointDestination:
             if exc.status_code == 404:
                 return None
             raise
+
+    def read_upload_state(self) -> dict[str, Any]:
+        path = f"{self.settings.output_parent_sp_path.rstrip('/')}/{UPLOAD_STATE_FILENAME}"
+        item = self._try_item_by_path(path)
+        if item is None:
+            return {}
+        response = self.client.request("GET", f"{GRAPH_BASE}/drives/{self.drive_id}/items/{item['id']}/content")
+        if not response.ok:
+            raise GraphError(f"Read upload state failed: {response.status_code}: {response.text}", response.status_code)
+        return json.loads(response.content)
+
+    def write_upload_state(self, state: dict[str, Any]) -> None:
+        url = f"{GRAPH_BASE}/drives/{self.drive_id}/items/{self.root_item['id']}:/{UPLOAD_STATE_FILENAME}:/content"
+        self.client.json(
+            "PUT",
+            url,
+            data=json.dumps(state, indent=2).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+        )
 
     def ensure_date_folder(self, calendar_date: str, subfolder: str | None = None) -> dict[str, Any]:
         cache_key = f"{calendar_date}/{subfolder}" if subfolder else calendar_date
