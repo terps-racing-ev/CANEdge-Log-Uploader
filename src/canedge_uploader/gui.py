@@ -397,7 +397,7 @@ class UploaderWindow:
             "",
         ]
         for item in upload_items[:200]:
-            lines.append(f"{item.calendar_date}  {item.raw_filename}")
+            lines.append(item.label)
         if len(upload_items) > 200:
             lines.append(f"... plus {len(upload_items) - 200} more")
         self._set_preview("\n".join(lines))

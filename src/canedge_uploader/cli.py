@@ -78,7 +78,7 @@ def main(argv: list[str] | None = None) -> int:
             for note in preview.notes:
                 print(note)
             for item in preview.upload_items:
-                print(f"{item.calendar_date}  Raw/{item.raw_filename}")
+                print(item.label)
             if args.preview:
                 return 0
             summary = processor.upload_from_sd(args.source, preview)

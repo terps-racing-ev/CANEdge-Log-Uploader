@@ -43,6 +43,19 @@ def discover_canedge_logs(folder: Path) -> list[CanedgeLog]:
     return sorted(logs, key=lambda log: (log.device_id, log.position))
 
 
+def group_recordings(files: list[Path]) -> list[tuple[Path, ...]]:
+    """Group CANedge split files (<session>/<split>.MF4) into one recording per session folder.
+
+    The logger rolls a long session over into 00000001.MF4, 00000002.MF4, ... in the same
+    session folder; those splits are one continuous recording. Any other file stands alone.
+    """
+    groups: dict[Path, list[Path]] = {}
+    for path in files:
+        is_split = CANEDGE_INDEX_RE.match(path.parent.name) and CANEDGE_INDEX_RE.match(path.stem)
+        groups.setdefault(path.parent if is_split else path, []).append(path)
+    return [tuple(sorted(parts, key=lambda p: (p.stem, p.name))) for parts in groups.values()]
+
+
 def discover_mf4_files(folder: Path) -> list[Path]:
     folder = folder.expanduser().resolve()
     if not folder.is_dir():

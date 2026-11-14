@@ -37,13 +37,28 @@ class ArtifactPlan:
 
 @dataclass(frozen=True)
 class UploadPreviewItem:
+    """One recording: a CANedge session, made of one or more split files uploaded as a single log.
+
+    ``source_path`` is the first split; ``split`` is the last split, which is what the
+    upload record advances to once the recording uploads.
+    """
+
     source_path: Path
-    calendar_date: str
-    raw_filename: str
     raw_exists: bool = False
     device_id: str = ""
     session: int = 0
     split: int = 0
+    parts: tuple[Path, ...] = ()
+
+    @property
+    def files(self) -> tuple[Path, ...]:
+        return self.parts or (self.source_path,)
+
+    @property
+    def label(self) -> str:
+        files = self.files
+        name = files[0].name if len(files) == 1 else f"{files[0].name}-{files[-1].name} ({len(files)} splits)"
+        return f"{self.device_id}/{self.session:08d}/{name}"
 
 
 @dataclass(frozen=True)

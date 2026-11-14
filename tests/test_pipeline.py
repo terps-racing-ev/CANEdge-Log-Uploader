@@ -7,7 +7,7 @@ import unittest
 from zoneinfo import ZoneInfo
 
 from canedge_uploader.config import Settings
-from canedge_uploader.models import RecordingContext, RunSummary, UploadPreview, UploadPreviewItem
+from canedge_uploader.models import RunSummary, UploadPreview, UploadPreviewItem
 from canedge_uploader.pipeline import CancelledError, Processor, clean_can_source_names
 
 DEVICE = "9B3425A8"
@@ -61,26 +61,13 @@ class FakeDestination:
 
 
 class SessionClockProcessor(Processor):
-    """Derives each log's start time from its session number instead of reading MF4 headers."""
+    """Derives each log's file time from its session number.
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.inspected = []
+    Card files are empty, so any attempt to open one as MF4 during preview would fail.
+    """
 
     def _filesystem_time(self, source):
         return session_start(source)
-
-    def _inspect_context(self, source, source_root):
-        self.inspected.append(source.parent.name)
-        return RecordingContext(
-            source_path=source,
-            source_root=source_root,
-            source_digest="",
-            dbc_digest="",
-            start_time=session_start(source),
-            device_id="device",
-            duration_seconds=12,
-        )
 
 
 def record(session, split=1):
@@ -134,7 +121,7 @@ class PipelineTests(unittest.TestCase):
         self.assertIn("check", stages)
         self.assertIn("file_complete", stages)
 
-    def test_preview_upload_honors_cancel_before_inspecting_files(self):
+    def test_preview_upload_honors_cancel(self):
         from threading import Event
 
         make_card(self.card, (1, 1))
@@ -144,7 +131,6 @@ class PipelineTests(unittest.TestCase):
 
         with self.assertRaises(CancelledError):
             processor.preview_upload_from_sd(self.card)
-        self.assertEqual(processor.inspected, [])
 
     def test_preview_skips_logs_at_or_before_upload_record_without_reading_them(self):
         make_card(self.card, (1, 1), (2, 1), (2, 2), (3, 1))
@@ -153,11 +139,52 @@ class PipelineTests(unittest.TestCase):
 
         preview = processor.preview_upload_from_sd(self.card)
 
-        self.assertEqual([item.raw_exists for item in preview.items], [True, True, False, False])
+        self.assertEqual([item.raw_exists for item in preview.items], [True, False, False])
         self.assertEqual([(item.session, item.split) for item in preview.upload_items], [(2, 2), (3, 1)])
-        self.assertEqual(processor.inspected, ["00000002", "00000003"])
         self.assertFalse(destination.listed_date_folders)
-        self.assertEqual(preview.notes, [f"{DEVICE}: 2 skipped (session 2 split 1 and earlier already uploaded)."])
+        self.assertEqual([item.label for item in preview.upload_items], [f"{DEVICE}/00000002/00000002.MF4", f"{DEVICE}/00000003/00000001.MF4"])
+        self.assertEqual(preview.notes, [f"{DEVICE}: 1 skipped (session 2 split 1 and earlier already uploaded)."])
+
+    def test_preview_joins_split_files_of_a_session_into_one_log(self):
+        make_card(self.card, (1, 1), (2, 1), (2, 2), (2, 3), (3, 1))
+        processor = SessionClockProcessor(settings(), destination=FakeDestination(state=record(1)))
+
+        preview = processor.preview_upload_from_sd(self.card)
+
+        self.assertEqual(len(preview.items), 3)
+        session_two = preview.upload_items[0]
+        self.assertEqual([path.name for path in session_two.files], ["00000001.MF4", "00000002.MF4", "00000003.MF4"])
+        self.assertEqual((session_two.session, session_two.split), (2, 3))
+        self.assertEqual(session_two.label, f"{DEVICE}/00000002/00000001.MF4-00000003.MF4 (3 splits)")
+
+    def test_preview_fallback_judges_whole_session_by_first_split(self):
+        make_card(self.card, (1, 1), (1, 2), (2, 1), (2, 2))
+        destination = FakeDestination({"2026-09-07": ["2026-09-07_13-00-00_12s_RAW.mf4"]})
+        processor = SessionClockProcessor(settings(), destination=destination)
+
+        preview = processor.preview_upload_from_sd(self.card)
+
+        self.assertEqual([item.raw_exists for item in preview.items], [True, False])
+        self.assertEqual(len(preview.upload_items[0].files), 2)
+
+    def test_upload_processes_all_splits_together_and_records_last_split(self):
+        make_card(self.card, (2, 1), (2, 2), (2, 3))
+        processed = []
+
+        class JoiningProcessor(SessionClockProcessor):
+            def _process_one(self, parts, *args, **kwargs):
+                processed.append(tuple(path.name for path in parts))
+                return "2026-09-07_14-00-00_1h0m_RAW.mf4"
+
+        destination = FakeDestination(state=record(1))
+        processor = JoiningProcessor(settings(), destination=destination)
+
+        summary = processor.upload_from_sd(self.card)
+
+        self.assertEqual(processed, [("00000001.MF4", "00000002.MF4", "00000003.MF4")])
+        self.assertEqual(summary.discovered, 1)
+        self.assertEqual(destination.state["devices"][DEVICE]["session"], 2)
+        self.assertEqual(destination.state["devices"][DEVICE]["split"], 3)
 
     def test_preview_without_upload_record_falls_back_to_latest_sharepoint_raw(self):
         make_card(self.card, (1, 1), (2, 1))
@@ -172,7 +199,6 @@ class PipelineTests(unittest.TestCase):
         preview = processor.preview_upload_from_sd(self.card)
 
         self.assertEqual([item.raw_exists for item in preview.items], [True, False])
-        self.assertEqual(processor.inspected, ["00000002"])
         self.assertEqual(destination.raw_name_checks, [])
         self.assertIn("no upload record", preview.notes[0])
         self.assertEqual(preview.notes[1], "1 skipped (at or before latest SharePoint raw: 2026-09-07_13-00-00_12s_RAW.mf4).")
@@ -203,8 +229,8 @@ class PipelineTests(unittest.TestCase):
         preview = UploadPreview(
             Path("C:/logs"),
             [
-                UploadPreviewItem(first, "2026-09-06", "2026-09-06_18-00-00_12s_RAW.mf4", raw_exists=True),
-                UploadPreviewItem(second, "2026-09-07", "2026-09-07_13-00-00_12s_RAW.mf4", raw_exists=False),
+                UploadPreviewItem(first, raw_exists=True),
+                UploadPreviewItem(second, raw_exists=False),
             ],
             decoded_filenames_known=True,
         )
@@ -212,16 +238,17 @@ class PipelineTests(unittest.TestCase):
 
         summary = processor.upload_from_sd(Path("C:/logs"), preview)
 
-        self.assertEqual(processed, [second])
+        self.assertEqual(processed, [(second,)])
         self.assertEqual(summary, RunSummary(discovered=1))
 
     def test_upload_record_stops_advancing_at_first_failed_log(self):
         make_card(self.card, (3, 1), (4, 1), (5, 1))
 
         class FailingProcessor(SessionClockProcessor):
-            def _process_one(self, source, *args, **kwargs):
-                if source.parent.name == "00000004":
+            def _process_one(self, parts, *args, **kwargs):
+                if parts[0].parent.name == "00000004":
                     raise RuntimeError("upload failed")
+                return f"{session_start(parts[0]):%Y-%m-%d_%H-%M-%S}_12s_RAW.mf4"
 
         destination = FakeDestination(state=record(2))
         processor = FailingProcessor(settings(), destination=destination)
@@ -235,7 +262,7 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(destination.state["devices"][DEVICE]["raw"], "2026-09-07_15-00-00_12s_RAW.mf4")
 
     def test_upload_record_never_moves_backwards(self):
-        item = UploadPreviewItem(Path("x.MF4"), "", "", device_id=DEVICE, session=5, split=1)
+        item = UploadPreviewItem(Path("x.MF4"), device_id=DEVICE, session=5, split=1)
         destination = FakeDestination(state=record(9))
         processor = Processor(settings(), destination=destination)
 

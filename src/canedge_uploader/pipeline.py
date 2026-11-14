@@ -14,7 +14,7 @@ from zoneinfo import ZoneInfo
 
 from . import rules
 from .config import Settings
-from .files import discover_canedge_logs, discover_dbcs, eastern_time, infer_device_id, mf4_inputs
+from .files import discover_canedge_logs, discover_dbcs, eastern_time, group_recordings, infer_device_id, mf4_inputs
 from .models import (
     ArtifactPlan,
     CloudDay,
@@ -37,6 +37,12 @@ UPLOAD_STATE_VERSION = 1
 
 class CancelledError(RuntimeError):
     pass
+
+
+def recording_name(parts: tuple[Path, ...]) -> str:
+    if len(parts) == 1:
+        return parts[0].name
+    return f"{parts[0].parent.name}/{parts[0].name}-{parts[-1].name} ({len(parts)} splits)"
 
 
 def clean_can_source_names(mdf: Any) -> None:
@@ -130,39 +136,32 @@ class Processor:
             latest_raw = self._latest_uploaded_raw()
             latest_raw_time = self._latest_raw_time(latest_raw)
 
+        # A long session is split by the logger into several files; each session uploads as one recording.
+        sessions = [list(group) for _key, group in groupby(logs, key=lambda log: (log.device_id, log.session))]
+        self._file_total = len(sessions)
         items: list[UploadPreviewItem] = []
-        for index, entry in enumerate(logs, start=1):
+        for index, splits in enumerate(sessions, start=1):
             self._active_file_index = index
             self._check_cancel()
-            by_timestamp = entry.device_id in fallback_devices
-            if by_timestamp:
-                already_uploaded = latest_raw_time is not None and self._filesystem_time(entry.path) <= latest_raw_time
+            first = splits[0]
+            if first.device_id in fallback_devices:
+                # Raw filenames carry the session start, so the whole session is judged by its first split.
+                uploaded_session = latest_raw_time is not None and self._filesystem_time(first.path) <= latest_raw_time
+                pending = [] if uploaded_session else splits
             else:
-                already_uploaded = entry.position <= uploaded[entry.device_id]
-            if already_uploaded:
-                self._emit("preview", f"Skipping uploaded log {entry.label} ({index}/{len(logs)})", index, len(logs), entry.path)
-                calendar_date = ""
-                raw_filename = entry.path.name
-            else:
-                self._emit("preview", f"Inspecting new log {entry.label} ({index}/{len(logs)})", index, len(logs), entry.path)
-                context = self._inspect_context(entry.path, source_root)
-                raw_plan = make_raw_artifact_plan(context)
-                self._check_cancel()
-                already_uploaded = by_timestamp and self._raw_plan_is_at_or_before_latest(raw_plan, latest_raw)
-                calendar_date = raw_plan.calendar_date
-                raw_filename = raw_plan.filename
-            items.append(
-                UploadPreviewItem(
-                    source_path=entry.path,
-                    calendar_date=calendar_date,
-                    raw_filename=raw_filename,
-                    raw_exists=already_uploaded,
-                    device_id=entry.device_id,
-                    session=entry.session,
-                    split=entry.split,
-                )
+                pending = [entry for entry in splits if entry.position > uploaded[first.device_id]]
+            item = UploadPreviewItem(
+                source_path=(pending or splits)[0].path,
+                raw_exists=not pending,
+                device_id=first.device_id,
+                session=first.session,
+                split=(pending or splits)[-1].split,
+                parts=tuple(entry.path for entry in pending or splits),
             )
-            self._emit("file_complete", f"Previewed file {index} of {len(logs)}", index, len(logs), entry.path)
+            verb = "Skipping uploaded" if item.raw_exists else "New"
+            self._emit("preview", f"{verb} log {item.label} ({index}/{len(sessions)})", index, len(sessions), first.path)
+            items.append(item)
+            self._emit("file_complete", f"Previewed log {index} of {len(sessions)}", index, len(sessions), first.path)
 
         for device_id, (session, split) in uploaded.items():
             skipped = sum(1 for item in items if item.device_id == device_id and item.raw_exists)
@@ -183,10 +182,10 @@ class Processor:
         if preview is None:
             preview = self.preview_upload_from_sd(source_root)
         upload_items = preview.upload_items
-        files = [item.source_path for item in upload_items]
-        summary = RunSummary(discovered=len(files))
-        self._file_total = len(files)
-        if not files:
+        recordings = [item.files for item in upload_items]
+        summary = RunSummary(discovered=len(recordings))
+        self._file_total = len(recordings)
+        if not recordings:
             self._emit("scan", "No new CANedge logs to upload")
             return summary
         if not self.destination:
@@ -195,7 +194,7 @@ class Processor:
         summary.root_url = self.destination.root_url
         with tempfile.TemporaryDirectory(prefix="canedge-uploader-") as directory:
             self._process_files(
-                files,
+                recordings,
                 source_root,
                 Path(directory),
                 summary,
@@ -212,12 +211,12 @@ class Processor:
         devices = self.destination.read_upload_state().get("devices", {})
         return {device_id.upper(): (int(entry["session"]), int(entry["split"])) for device_id, entry in devices.items()}
 
-    def _upload_state_recorder(self, items: list[UploadPreviewItem]) -> Callable[[Path, bool], None]:
+    def _upload_state_recorder(self, items: list[UploadPreviewItem]) -> Callable[[Path, bool, str], None]:
         """Advance each device's upload record only across an unbroken run of successful files."""
         by_path = {item.source_path: item for item in items}
         stalled: set[str] = set()
 
-        def record(source: Path, ok: bool) -> None:
+        def record(source: Path, ok: bool, raw_filename: str = "") -> None:
             item = by_path.get(source)
             if item is None or not item.device_id or item.device_id in stalled:
                 return
@@ -225,7 +224,7 @@ class Processor:
                 stalled.add(item.device_id)
                 return
             try:
-                self._record_uploaded(item)
+                self._record_uploaded(item, raw_filename)
             except CancelledError:
                 raise
             except Exception as exc:
@@ -235,7 +234,7 @@ class Processor:
 
         return record
 
-    def _record_uploaded(self, item: UploadPreviewItem) -> None:
+    def _record_uploaded(self, item: UploadPreviewItem, raw_filename: str = "") -> None:
         state = self.destination.read_upload_state()
         devices = state.setdefault("devices", {})
         current = devices.get(item.device_id)
@@ -244,7 +243,7 @@ class Processor:
         devices[item.device_id] = {
             "session": item.session,
             "split": item.split,
-            "raw": item.raw_filename,
+            "raw": raw_filename,
             "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         }
         state["version"] = UPLOAD_STATE_VERSION
@@ -253,13 +252,14 @@ class Processor:
 
     def decode_local(self, inputs: list[Path], output_dir: Path) -> RunSummary:
         files = mf4_inputs(inputs)
+        recordings = group_recordings(files)
         output_dir = output_dir.expanduser().resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
         source_root = self._common_root(files)
-        summary = RunSummary(discovered=len(files))
-        self._file_total = len(files)
+        summary = RunSummary(discovered=len(recordings))
+        self._file_total = len(recordings)
         self._process_files(
-            files,
+            recordings,
             source_root,
             output_dir,
             summary,
@@ -313,7 +313,7 @@ class Processor:
                 for file_index, local_raw in downloaded:
                     self._active_file_index = file_index
                     self._process_one(
-                        local_raw,
+                        (local_raw,),
                         work_dir,
                         dbcs,
                         work_dir,
@@ -335,7 +335,7 @@ class Processor:
 
     def _process_files(
         self,
-        files: list[Path],
+        recordings: list[tuple[Path, ...]],
         source_root: Path,
         work_dir: Path,
         summary: RunSummary,
@@ -345,22 +345,24 @@ class Processor:
         skip_existing_decoded: bool,
         overwrite_decoded: bool,
         overwrite_raw: bool,
-        on_result: Callable[[Path, bool], None] | None = None,
+        on_result: Callable[[Path, bool, str], None] | None = None,
     ) -> None:
+        """Process each recording; a recording is one or more split files joined into one log."""
         dbcs = discover_dbcs(self.settings.dbc_dir)
-        if not files:
+        if not recordings:
             self._emit("scan", "No MF4 files were found")
             return
-        self._emit("scan", f"Processing {len(files)} MF4 files with {len(dbcs)} DBC files")
+        self._emit("scan", f"Processing {len(recordings)} recordings with {len(dbcs)} DBC files")
         with nullcontext(work_dir):
             work_dir.mkdir(parents=True, exist_ok=True)
-            for index, source in enumerate(files, start=1):
+            for index, parts in enumerate(recordings, start=1):
+                source = parts[0]
                 self._active_file_index = index
                 self._check_cancel()
-                self._emit("file", f"Inspecting {source.name} ({index}/{len(files)})", index, len(files), source)
+                self._emit("file", f"Inspecting {recording_name(parts)} ({index}/{len(recordings)})", index, len(recordings), source)
                 try:
-                    self._process_one(
-                        source,
+                    raw_filename = self._process_one(
+                        parts,
                         source_root,
                         dbcs,
                         work_dir,
@@ -376,19 +378,19 @@ class Processor:
                 except Exception as exc:
                     summary.failed += 1
                     log.exception("Failed to process %s", source)
-                    self._emit("error", f"{source}: {exc}", index, len(files), source)
+                    self._emit("error", f"{recording_name(parts)}: {exc}", index, len(recordings), source)
                     if on_result:
                         on_result(source, False)
                 else:
                     if on_result:
-                        on_result(source, True)
+                        on_result(source, True, raw_filename or "")
                 finally:
                     if not self.cancel.is_set():
-                        self._emit("file_complete", f"Finished file {index} of {len(files)}", index, len(files), source)
+                        self._emit("file_complete", f"Finished log {index} of {len(recordings)}", index, len(recordings), source)
 
     def _process_one(
         self,
-        source: Path,
+        parts: tuple[Path, ...],
         source_root: Path,
         dbcs: list[Path],
         work_dir: Path,
@@ -399,13 +401,23 @@ class Processor:
         skip_existing_decoded: bool,
         overwrite_decoded: bool,
         overwrite_raw: bool,
-    ) -> None:
+    ) -> str:
+        """Decode and upload one recording; returns the raw artifact filename.
+
+        Split files from one session are concatenated so rules, naming, the decoded output
+        and the raw upload all see the session as one continuous log.
+        """
         try:
             from asammdf import MDF
         except ImportError as exc:
             raise RuntimeError("asammdf is not installed. Run: pip install -e .") from exc
 
-        raw = MDF(str(source))
+        source = parts[0]
+        if len(parts) == 1:
+            raw = MDF(str(source))
+        else:
+            self._emit("merge", f"Joining {recording_name(parts)}", file=source)
+            raw = MDF.concatenate([str(part) for part in parts], sync=True)
         decoded = None
         try:
             context = self._context_from_mdf(raw, source, source_root)
@@ -416,10 +428,10 @@ class Processor:
                 if upload_decoded and skip_existing_decoded and self._all_remote(plans):
                     summary.skipped += len(plans)
                     if upload_raw:
-                        self._upload_or_skip_raw(source, raw_plan, summary, overwrite_raw)
-                    return
+                        self._upload_or_skip_raw(parts, raw, work_dir, raw_plan, summary, overwrite_raw)
+                    return raw_plan.filename
 
-            self._emit("decode", f"Decoding {source.name}", file=source)
+            self._emit("decode", f"Decoding {recording_name(parts)}", file=source)
             decoded = raw.extract_bus_logging(
                 database_files={"CAN": [(str(path), self.settings.decode_can_bus) for path in dbcs]},
                 version="4.10",
@@ -447,22 +459,11 @@ class Processor:
                     self._emit("saved", f"Saved {output}", file=source)
 
             if upload_raw:
-                self._upload_or_skip_raw(source, raw_plan, summary, overwrite_raw)
+                self._upload_or_skip_raw(parts, raw, work_dir, raw_plan, summary, overwrite_raw)
+            return raw_plan.filename
         finally:
             if decoded is not None:
                 decoded.close()
-            raw.close()
-
-    def _inspect_context(self, source: Path, source_root: Path) -> RecordingContext:
-        try:
-            from asammdf import MDF
-        except ImportError as exc:
-            raise RuntimeError("asammdf is not installed. Run: pip install -e .") from exc
-
-        raw = MDF(str(source))
-        try:
-            return self._context_from_mdf(raw, source, source_root)
-        finally:
             raw.close()
 
     def _context_from_mdf(self, raw, source: Path, source_root: Path) -> RecordingContext:
@@ -513,18 +514,29 @@ class Processor:
 
     def _upload_or_skip_raw(
         self,
-        source: Path,
+        parts: tuple[Path, ...],
+        raw,
+        work_dir: Path,
         raw_plan: ArtifactPlan,
         summary: RunSummary,
         overwrite_raw: bool,
     ) -> None:
+        source = parts[0]
         if not overwrite_raw and raw_plan.filename in self._raw_remote_names(raw_plan.calendar_date):
             summary.skipped += 1
             self._emit("skip", f"Already uploaded: Raw/{raw_plan.filename}", file=source)
             return
+        upload_path = source
+        if len(parts) > 1:
+            # Upload the joined session so the cloud raw matches the decoded output and re-decodes the same way.
+            self._check_cancel()
+            upload_path = work_dir / "Raw" / raw_plan.filename
+            upload_path.parent.mkdir(parents=True, exist_ok=True)
+            self._emit("save", f"Writing joined Raw/{raw_plan.filename}", file=source)
+            raw.save(str(upload_path), overwrite=True, compression=2)
         self._emit("upload", f"Uploading Raw/{raw_plan.filename}", file=source)
         result = self.destination.upload_file(
-            source,
+            upload_path,
             raw_plan.calendar_date,
             self._upload_progress(source, f"Raw/{raw_plan.filename}"),
             overwrite=overwrite_raw,
@@ -623,16 +635,6 @@ class Processor:
             return None
         value = f"{match.group(1)} {match.group(2).replace('-', ':')}"
         return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=ZoneInfo(self.settings.timezone))
-
-    def _raw_plan_is_at_or_before_latest(self, plan: ArtifactPlan, latest_raw: tuple[str, str] | None) -> bool:
-        if latest_raw is None:
-            return False
-        latest_date, latest_filename = latest_raw
-        if plan.calendar_date < latest_date:
-            return True
-        if plan.calendar_date > latest_date:
-            return False
-        return plan.filename <= latest_filename
 
     def _filesystem_time(self, path: Path) -> datetime:
         stat = path.stat()
