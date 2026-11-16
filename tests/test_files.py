@@ -3,7 +3,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from canedge_uploader.files import discover_canedge_logs, discover_mf4_files, eastern_time, group_recordings, infer_device_id, mf4_inputs
+from canedge_uploader.files import discover_canedge_logs, discover_mf4_files, eastern_time, infer_device_id, mf4_inputs
 
 
 class FileTests(unittest.TestCase):
@@ -60,14 +60,3 @@ class FileTests(unittest.TestCase):
             second.write_bytes(b"two")
 
             self.assertEqual(mf4_inputs([folder, second]), sorted([first.resolve(), second.resolve()]))
-
-    def test_group_recordings_joins_splits_by_session_folder(self):
-        session = Path("LOG/9B3425A8/00000007")
-        other = Path("LOG/9B3425A8/00000008")
-        loose = Path("exports/run.MF4")
-        files = [session / "00000002.MF4", session / "00000001.MF4", loose, other / "00000001.MF4"]
-
-        self.assertEqual(
-            group_recordings(files),
-            [(session / "00000001.MF4", session / "00000002.MF4"), (loose,), (other / "00000001.MF4",)],
-        )

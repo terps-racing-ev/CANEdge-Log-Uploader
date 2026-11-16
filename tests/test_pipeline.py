@@ -139,52 +139,11 @@ class PipelineTests(unittest.TestCase):
 
         preview = processor.preview_upload_from_sd(self.card)
 
-        self.assertEqual([item.raw_exists for item in preview.items], [True, False, False])
+        self.assertEqual([item.raw_exists for item in preview.items], [True, True, False, False])
         self.assertEqual([(item.session, item.split) for item in preview.upload_items], [(2, 2), (3, 1)])
         self.assertFalse(destination.listed_date_folders)
         self.assertEqual([item.label for item in preview.upload_items], [f"{DEVICE}/00000002/00000002.MF4", f"{DEVICE}/00000003/00000001.MF4"])
-        self.assertEqual(preview.notes, [f"{DEVICE}: 1 skipped (session 2 split 1 and earlier already uploaded)."])
-
-    def test_preview_joins_split_files_of_a_session_into_one_log(self):
-        make_card(self.card, (1, 1), (2, 1), (2, 2), (2, 3), (3, 1))
-        processor = SessionClockProcessor(settings(), destination=FakeDestination(state=record(1)))
-
-        preview = processor.preview_upload_from_sd(self.card)
-
-        self.assertEqual(len(preview.items), 3)
-        session_two = preview.upload_items[0]
-        self.assertEqual([path.name for path in session_two.files], ["00000001.MF4", "00000002.MF4", "00000003.MF4"])
-        self.assertEqual((session_two.session, session_two.split), (2, 3))
-        self.assertEqual(session_two.label, f"{DEVICE}/00000002/00000001.MF4-00000003.MF4 (3 splits)")
-
-    def test_preview_fallback_judges_whole_session_by_first_split(self):
-        make_card(self.card, (1, 1), (1, 2), (2, 1), (2, 2))
-        destination = FakeDestination({"2026-09-07": ["2026-09-07_13-00-00_12s_RAW.mf4"]})
-        processor = SessionClockProcessor(settings(), destination=destination)
-
-        preview = processor.preview_upload_from_sd(self.card)
-
-        self.assertEqual([item.raw_exists for item in preview.items], [True, False])
-        self.assertEqual(len(preview.upload_items[0].files), 2)
-
-    def test_upload_processes_all_splits_together_and_records_last_split(self):
-        make_card(self.card, (2, 1), (2, 2), (2, 3))
-        processed = []
-
-        class JoiningProcessor(SessionClockProcessor):
-            def _process_one(self, parts, *args, **kwargs):
-                processed.append(tuple(path.name for path in parts))
-                return "2026-09-07_14-00-00_1h0m_RAW.mf4"
-
-        destination = FakeDestination(state=record(1))
-        processor = JoiningProcessor(settings(), destination=destination)
-
-        summary = processor.upload_from_sd(self.card)
-
-        self.assertEqual(processed, [("00000001.MF4", "00000002.MF4", "00000003.MF4")])
-        self.assertEqual(summary.discovered, 1)
-        self.assertEqual(destination.state["devices"][DEVICE]["session"], 2)
-        self.assertEqual(destination.state["devices"][DEVICE]["split"], 3)
+        self.assertEqual(preview.notes, [f"{DEVICE}: 2 skipped (session 2 split 1 and earlier already uploaded)."])
 
     def test_preview_without_upload_record_falls_back_to_latest_sharepoint_raw(self):
         make_card(self.card, (1, 1), (2, 1))
@@ -238,17 +197,17 @@ class PipelineTests(unittest.TestCase):
 
         summary = processor.upload_from_sd(Path("C:/logs"), preview)
 
-        self.assertEqual(processed, [(second,)])
+        self.assertEqual(processed, [second])
         self.assertEqual(summary, RunSummary(discovered=1))
 
     def test_upload_record_stops_advancing_at_first_failed_log(self):
         make_card(self.card, (3, 1), (4, 1), (5, 1))
 
         class FailingProcessor(SessionClockProcessor):
-            def _process_one(self, parts, *args, **kwargs):
-                if parts[0].parent.name == "00000004":
+            def _process_one(self, source, *args, **kwargs):
+                if source.parent.name == "00000004":
                     raise RuntimeError("upload failed")
-                return f"{session_start(parts[0]):%Y-%m-%d_%H-%M-%S}_12s_RAW.mf4"
+                return f"{session_start(source):%Y-%m-%d_%H-%M-%S}_12s_RAW.mf4"
 
         destination = FakeDestination(state=record(2))
         processor = FailingProcessor(settings(), destination=destination)
