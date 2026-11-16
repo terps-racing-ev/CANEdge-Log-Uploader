@@ -64,6 +64,21 @@ class RuleTests(unittest.TestCase):
         segments = rules.build_segments(Decoded([0, 1.01, 0.5]), context=None)
         self.assertEqual(segments[0].suffixes, ())
 
+    def test_no_vcu_suffix_when_speed_signal_missing(self):
+        class NoSpeedDecoded:
+            def whereis(self, signal_name):
+                return ()
+
+            def get(self, signal_name, group=None, index=None):
+                raise KeyError(signal_name)
+
+        segments = rules.build_segments(NoSpeedDecoded(), context=None)
+        self.assertEqual(segments[0].suffixes, ("NO_VCU",))
+
+    def test_no_vcu_suffix_when_speed_signal_has_no_samples(self):
+        segments = rules.build_segments(Decoded([]), context=None)
+        self.assertEqual(segments[0].suffixes, ("NO_VCU",))
+
     def test_multiple_occurrences_use_lower_bus(self):
         segments = rules.build_segments(MultiBusDecoded(), context=None)
         self.assertEqual(segments[0].suffixes, ("STATIC",))

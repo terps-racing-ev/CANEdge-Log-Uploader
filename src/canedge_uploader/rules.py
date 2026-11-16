@@ -32,9 +32,20 @@ def build_segments(decoded: "MDF | None", context: RecordingContext) -> list[Seg
     if decoded is None:
         raise ValueError("Decoded data is required to apply VCU_Speed_MPH rules")
 
+    if not has_signal(decoded, "VCU_Speed_MPH"):
+        return [Segment(suffixes=("NO_VCU",))]
     _timestamps, speed_samples = signal_samples(decoded, "VCU_Speed_MPH")
+    if len(speed_samples) == 0:
+        return [Segment(suffixes=("NO_VCU",))]
     suffixes = () if any(float(speed) > 1.0 for speed in speed_samples) else ("STATIC",)
     return [Segment(suffixes=suffixes)]
+
+
+def has_signal(decoded: "MDF", signal_name: str) -> bool:
+    """True when the decoded log contains ``signal_name`` (e.g. its CAN message was never seen)."""
+    if hasattr(decoded, "whereis"):
+        return bool(decoded.whereis(signal_name))
+    return True
 
 
 def signal_samples(decoded: "MDF", signal_name: str) -> tuple[Any, Any]:
